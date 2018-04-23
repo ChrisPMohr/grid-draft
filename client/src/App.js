@@ -63,9 +63,8 @@ class App extends Component {
         </header>
         { this.state.response != null &&
           <div className="draft">
-            <CardRow data={this.state.response.row_1} />
-            <CardRow data={this.state.response.row_2} />
-            <CardRow data={this.state.response.row_3} />
+            {this.state.response.rows.map((row_data, i) =>
+              <CardRow key={i} data={row_data} />)}
           </div>
         }
       </div>

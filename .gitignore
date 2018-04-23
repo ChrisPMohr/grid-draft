@@ -3,6 +3,9 @@
 # dependencies
 node_modules/
 
+# static images, get these somewhere else
+public/images
+
 # testing
 coverage/
 

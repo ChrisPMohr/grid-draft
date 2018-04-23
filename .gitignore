@@ -6,6 +6,9 @@ node_modules/
 # static images, get these somewhere else
 public/images
 
+# cube list data, eventually store in db
+cubelist.txt
+
 # testing
 coverage/
 

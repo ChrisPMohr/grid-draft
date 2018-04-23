@@ -1,13 +1,11 @@
-const express = require('express');
+var express = require('express');
+var fs  = require("fs");
+var _ = require("underscore");
 
 const app = express();
 const port = process.env.PORT || 5000;
 
 app.use(express.static('public'))
-
-app.get('/api/hello', (req, res) => {
-  res.send({ express: 'Hello From Express' });
-});
 
 function image_url(card_name) {
   return "/images/" + card_name
@@ -26,7 +24,7 @@ function get_pack_from_names(pack_names) {
   }
 }
 
-var pack_names = {
+var current_pack_names = {
   rows: [
     [
       "Snapcaster Mage",
@@ -46,14 +44,27 @@ var pack_names = {
   ]
 }
 
-app.get('/api/current_pack', (req, res) => {
-  res.send(get_pack_from_names(pack_names));
+cubelist_path = "cubelist.txt"
+var cubelist = fs.readFileSync(cubelist_path).toString().split('\n');
+
+app.get('/api/hello', (req, res) => {
+  res.send({ express: 'Hello From Express' });
 });
 
-app.post('/api/change_pack', (req, res) => {
-  tmp = pack_names.rows[0][0];
-  pack_names.rows[0][0] = pack_names.rows[1][1];
-  pack_names.rows[1][1] = tmp;
+app.get('/api/current_pack', (req, res) => {
+  res.send(get_pack_from_names(current_pack_names));
+});
+
+app.post('/api/new_pack', (req, res) => {
+  new_card_names = _.sample(cubelist, 9);
+  current_pack_names = {
+    rows: [
+      new_card_names.slice(0, 3),
+      new_card_names.slice(3, 6),
+      new_card_names.slice(6, 9)
+    ]
+  };
+
   res.send({});
 });
 

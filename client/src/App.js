@@ -49,7 +49,7 @@ class App extends Component {
   }
 
   getNewPack() {
-    this.postChangePackApi()
+    this.postNewPackApi()
       .then(res => this.getCurrentPack())
       .catch(err => console.log(err));
   }
@@ -63,8 +63,8 @@ class App extends Component {
     return body;
   };
 
-  postChangePackApi = async () => {
-    const response = await fetch('/api/change_pack', {
+  postNewPackApi = async () => {
+    const response = await fetch('/api/new_pack', {
       method: 'POST'
     });
     const body = await response.json();

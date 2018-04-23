@@ -1,0 +1,33 @@
+CREATE TABLE card (
+  id INTEGER PRIMARY KEY,
+  name TEXT
+);
+
+CREATE TABLE draft (
+  id INTEGER PRIMARY KEY
+);
+
+CREATE TABLE shuffled_cube (
+  position INTEGER,
+  draft_id INTEGER,
+  card_id INTEGER,
+  FOREIGN KEY(draft_id) REFERENCES draft(id),
+  FOREIGN KEY(card_id) REFERENCES card(id),
+  PRIMARY KEY(draft_id, position)
+);
+
+CREATE TABLE pack (
+  id INTEGER PRIMARY KEY,
+  draft_id INTEGER,
+  FOREIGN KEY(draft_id) REFERENCES draft(id)
+);
+
+CREATE TABLE pack_card (
+  row INTEGER,
+  col INTEGER,
+  card_id INTEGER,
+  pack_id INTEGER,
+  FOREIGN KEY(card_id) REFERENCES card(id),
+  FOREIGN KEY(pack_id) REFERENCES pack(id),
+  PRIMARY KEY(pack_id, row, col)
+);

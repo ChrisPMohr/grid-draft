@@ -26,7 +26,7 @@ function get_pack_from_names(pack_names) {
   }
 }
 
-const static_pack_names = {
+var pack_names = {
   rows: [
     [
       "Snapcaster Mage",
@@ -46,9 +46,15 @@ const static_pack_names = {
   ]
 }
 
+app.get('/api/current_pack', (req, res) => {
+  res.send(get_pack_from_names(pack_names));
+});
 
-app.get('/api/static_pack', (req, res) => {
-  res.send(get_pack_from_names(static_pack_names));
+app.post('/api/change_pack', (req, res) => {
+  tmp = pack_names.rows[0][0];
+  pack_names.rows[0][0] = pack_names.rows[1][1];
+  pack_names.rows[1][1] = tmp;
+  res.send({});
 });
 
 app.listen(port, () => console.log(`Listening on port ${port}`));

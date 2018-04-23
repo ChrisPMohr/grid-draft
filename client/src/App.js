@@ -40,13 +40,34 @@ class App extends Component {
   };
 
   componentDidMount() {
-    this.callApi()
+    this.getCurrentPack();
+  }
+
+  getCurrentPack() {
+    this.getCurrentPackApi()
       .then(res => this.setState({ response: res }))
       .catch(err => console.log(err));
   }
 
-  callApi = async () => {
-    const response = await fetch('/api/static_pack');
+  getNewPack() {
+    this.postChangePackApi()
+      .then(res => this.getCurrentPack())
+      .catch(err => console.log(err));
+  }
+
+  getCurrentPackApi = async () => {
+    const response = await fetch('/api/current_pack');
+    const body = await response.json();
+
+    if (response.status !== 200) throw Error(body.message);
+
+    return body;
+  };
+
+  postChangePackApi = async () => {
+    const response = await fetch('/api/change_pack', {
+      method: 'POST'
+    });
     const body = await response.json();
 
     if (response.status !== 200) throw Error(body.message);
@@ -67,6 +88,9 @@ class App extends Component {
               <CardRow key={i} data={row_data} />)}
           </div>
         }
+        <button onClick={() => this.getNewPack()}>
+          Get new pack!
+        </button>
       </div>
     );
   }

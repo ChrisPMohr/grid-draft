@@ -27,26 +27,6 @@ function get_pack_from_names(pack_names) {
   }
 }
 
-var current_pack_names = {
-  rows: [
-    [
-      "Snapcaster Mage",
-      "Fyndhorn Elves",
-      "Shriekmaw"
-    ],
-    [
-      "Strip Mine",
-      "Baleful Strix",
-      "Snuff Out"
-    ],
-    [
-      "Maelstrom Pulse",
-      "Wrath of God",
-      "Goblin Rabblemaster"
-    ]
-  ]
-}
-
 function cleanupDb() {
   db.run('DELETE FROM card');
   db.run('DELETE FROM shuffled_cube');

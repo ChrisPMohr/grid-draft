@@ -1,9 +1,20 @@
-var express = require('express');
-var fs  = require("fs");
 var _ = require("underscore");
+var fs  = require("fs");
+var express = require('express');
+var Knex = require('knex');
+var knexConfig = require('./knexfile');
+var { raw, Model } = require('objection');
 var sqlite3 = require('sqlite3').verbose()
 
-var db = new sqlite3.Database('dev.db')
+var Card = require('./models/card');
+var Draft = require('./models/draft');
+var Pack = require('./models/pack');
+var PackCard = require('./models/pack_card');
+var ShuffledCube = require('./models/shuffled_cube');
+
+const knex = Knex(knexConfig.development);
+
+Model.knex(knex);
 
 const app = express();
 const port = process.env.PORT || 5000;
@@ -27,141 +38,149 @@ function get_pack_from_names(pack_names) {
   }
 }
 
-function cleanupDb() {
-  db.run('DELETE FROM card');
-  db.run('DELETE FROM shuffled_cube');
-  db.run('DELETE FROM pack');
-  db.run('DELETE FROM pack_card');
+async function cleanupDb() {
+  await Draft.query().delete();
+  await Card.query().delete();
+  await ShuffledCube.query().delete();
+  await Pack.query().delete();
+  await PackCard.query().delete();
 }
 
-function createCards() {
+async function createCards() {
   cubelist_path = "cubelist.txt"
   var cubelist = fs.readFileSync(cubelist_path).toString().trim().split('\n');
 
-  var insert_card_stmt = db.prepare('INSERT INTO card(name) VALUES (?)');
-
   for (var cardname of cubelist) {
-    insert_card_stmt.run(cardname);
+    const draft = await Card
+      .query()
+      .insert({name: cardname});
   }
-
-  insert_card_stmt.finalize();
 
   return cubelist;
 }
 
-function createDraft(cubelist) {
-  var draft_id;
-  db.run('INSERT INTO draft DEFAULT VALUES', [], function (err) {
-    draft_id = this.lastID;
-    console.log("Created draft " + draft_id);
-    createShuffledCube(draft_id, cubelist);
-  });
+async function createDraft(cubelist) {
+  const draft = await Draft
+    .query()
+    .insert({});
+  const draft_id = draft.id;
+
+  try {
+    await createShuffledCube(draft_id, cubelist);
+  } catch (e) {
+    console.log("Caught error shuffling cube");
+    throw e;
+  }
 }
 
-function createShuffledCube(draft_id, cubelist) {
+async function createShuffledCube(draft_id, cubelist) {
   shuffled_cubelist = _.shuffle(cubelist);
-  var insert_shuffled_cubelist_stmt = db.prepare(
-    'INSERT INTO shuffled_cube(position, draft_id, card_id) VALUES (?, ?, ?)');
-  var get_card_id_stmt = db.prepare('SELECT id FROM card WHERE name = (?)');
 
-  let inserts = shuffled_cubelist.map((cardname, index) => {
-      return new Promise((resolve) => {
-        get_card_id_stmt.get(cardname, function(err, row) {
-          insert_shuffled_cubelist_stmt.run([index, draft_id, row.id], (err) => resolve())
-        });
-       })
-   });
+  for (i = 0; i < shuffled_cubelist.length; i++) {
+    const cardname = shuffled_cubelist[i];
+    const cards = await Card
+      .query()
+      .where('name', '=', cardname);
+    const card = cards[0];
+    await ShuffledCube
+     .query()
+     .insert({draft_id: draft_id, card_id: card.id, position: i});
+  }
 
-  Promise.all(inserts)
-    .then(() => {
-      get_card_id_stmt.finalize();
-      insert_shuffled_cubelist_stmt.finalize();
-      createPack(draft_id);
-  });
+  try {
+    await createPack(draft_id);
+  } catch (e) {
+    console.log("Caught error creating pack");
+    throw e;
+  }
 }
 
-function createPack(draft_id) {
-  var pack_id;
-  db.run('INSERT INTO pack(draft_id) VALUES (?)', [draft_id], function (err) {
-    pack_id = this.lastID;
-    var cards = []
-    db.each(
-      'SELECT card_id, position FROM shuffled_cube WHERE draft_id = (?) ORDER BY position ASC LIMIT 9',
-      [draft_id],
-      (err, row) => {
-        cards.push(row),
-        db.run(
-          'DELETE FROM shuffled_cube WHERE draft_id = ? AND position = ?',
-          [draft_id, row.position],
-          (err) => {
-            if (err)
-              console.log(err);
-          }
-        );
-      },
-      () => {
-        cards.forEach((card, index) => {
-          db.run(
-            'INSERT INTO pack_card(card_id, pack_id, row, col) VALUES (?, ?, ?, ?)',
-            [card.card_id, pack_id, Math.floor(index / 3), index % 3])
-        });
-      }
-    );
-  });
+async function createPack(draft_id) {
+  const pack = await Pack
+    .query()
+    .insert({draft_id: draft_id});
+  const pack_id = pack.id;
+
+  const shuffled_cube_entries = await ShuffledCube
+    .query()
+    .where('draft_id', '=', draft_id)
+    .orderBy('position')
+    .limit(9);
+  const card_ids = shuffled_cube_entries.map((entry) => entry.card_id);
+  for (i = 0; i < shuffled_cube_entries.length; i++) {
+    const entry = shuffled_cube_entries[i];
+    const entry_id = entry.$id();
+    await ShuffledCube
+      .query()
+      .deleteById(entry_id);
+    await PackCard
+      .query()
+      .insert(
+        {
+          card_id: entry.card_id,
+          pack_id: pack.id,
+          row: Math.floor(i / 3),
+          col: i % 3
+       }
+     )
+  }
 }
 
-function getCurrentDraft() {
-  return new Promise(resolve => {
-    db.get('SELECT MAX(id) AS id FROM draft', (err, row) => resolve(row.id))
-  });
+async function getCurrentDraftId() {
+  const result = await Draft
+    .query()
+    .select(raw('MAX(id) as id'))
+  const max_id = result[0].id
+  return max_id;
 }
 
-function getCurrentPack(draft_id) {
-  return new Promise(resolve => {
-    db.get(
-      'SELECT MAX(id) AS id FROM pack WHERE draft_id = ?',
-      [draft_id],
-      (err, row) => {
-        resolve(row.id);
-      }
-    )
-  });
+async function getCurrentPackId(draft_id) {
+  const result = await Pack
+    .query()
+    .select(raw('MAX(id) as id'))
+    .where('draft_id', '=', draft_id)
+  const max_id = result[0].id
+  return max_id;
 }
 
-function getPackNames(pack_id) {
-  return new Promise(resolve => {
-    db.all(
-      'SELECT row, col, name FROM pack_card JOIN card on pack_card.card_id = card.id WHERE pack_id = ? ORDER BY row, col',
-      [pack_id],
-      (err, rows) => {
-        resolve(_.chunk(rows.map((card) => card.name), 3));
-      }
-    )
-  })
+async function getPackNames(pack_id) {
+  const pack_cards = await PackCard
+    .query()
+    .select('pack_cards.*', 'cards.name as name')
+    .join('cards', 'pack_cards.card_id', 'cards.id')
+    .where('pack_id', '=', pack_id)
+    .orderBy(['row', 'col'])
+  return _.chunk(pack_cards.map((card) => card.name), 3)
 }
 
-db.serialize(function() {
-  cleanupDb();
-  const cubelist = createCards();
-  createDraft(cubelist);
-});
+async function setUp() {
+  try {
+    await cleanupDb()
+    const cubelist = await createCards();
+    createDraft(cubelist);
+    console.log("Finished setup");
+  } catch (e) {
+    console.log("Error while setting up the server");
+  }
+}
+
+setUp();
 
 app.get('/api/hello', (req, res) => {
   res.send({ express: 'Hello From Express' });
 });
 
 app.get('/api/current_pack', (req, res) => {
-  getCurrentDraft()
-   .then(draft_id => getCurrentPack(draft_id))
+  getCurrentDraftId()
+   .then(draft_id => getCurrentPackId(draft_id))
    .then(pack_id => getPackNames(pack_id))
    .then(pack_names => res.send(get_pack_from_names(pack_names)));
 });
 
 app.post('/api/new_pack', (req, res) => {
-  getCurrentDraft()
-    .then(draft_id => createPack(draft_id));
-
-  res.send({});
+  getCurrentDraftId()
+    .then(draft_id => createPack(draft_id))
+    .then(result => res.send({}));
 });
 
 app.listen(port, () => console.log(`Listening on port ${port}`));

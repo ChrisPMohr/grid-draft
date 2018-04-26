@@ -63,17 +63,16 @@ async function createDraft(cubelist) {
   const draft = await Draft
     .query()
     .insert({});
-  const draft_id = draft.id;
 
   try {
-    await createShuffledCube(draft_id, cubelist);
+    await createShuffledCube(draft, cubelist);
   } catch (e) {
-    console.log("Caught error shuffling cube");
+    console.log("Caught error shuffling cube", e);
     throw e;
   }
 }
 
-async function createShuffledCube(draft_id, cubelist) {
+async function createShuffledCube(draft, cubelist) {
   shuffled_cubelist = _.shuffle(cubelist);
 
   for (i = 0; i < shuffled_cubelist.length; i++) {
@@ -84,26 +83,26 @@ async function createShuffledCube(draft_id, cubelist) {
     const card = cards[0];
     await ShuffledCube
      .query()
-     .insert({draft_id: draft_id, card_id: card.id, position: i});
+     .insert({draft_id: draft.id, card_id: card.id, position: i});
   }
 
   try {
-    await createPack(draft_id);
+    await createPack(draft);
   } catch (e) {
-    console.log("Caught error creating pack");
+    console.log("Caught error creating pack", e);
     throw e;
   }
 }
 
-async function createPack(draft_id) {
-  const pack = await Pack
-    .query()
-    .insert({draft_id: draft_id});
+async function createPack(draft) {
+  const pack = await draft
+    .$relatedQuery('packs')
+    .insert({});
   const pack_id = pack.id;
 
   const shuffled_cube_entries = await ShuffledCube
     .query()
-    .where('draft_id', '=', draft_id)
+    .where('draft_id', '=', draft.id)
     .orderBy('position')
     .limit(9);
   const card_ids = shuffled_cube_entries.map((entry) => entry.card_id);
@@ -126,21 +125,28 @@ async function createPack(draft_id) {
   }
 }
 
-async function getCurrentDraftId() {
-  const result = await Draft
-    .query()
-    .select(raw('MAX(id) as id'))
-  const max_id = result[0].id
-  return max_id;
+async function getCurrentDraft() {
+  try {
+    return await Draft
+      .query()
+      .orderBy('id', 'desc')
+      .limit(1)
+      .first();
+  } catch (e) {
+    console.log("No current draft", e);
+  }
 }
 
-async function getCurrentPackId(draft_id) {
-  const result = await Pack
-    .query()
-    .select(raw('MAX(id) as id'))
-    .where('draft_id', '=', draft_id)
-  const max_id = result[0].id
-  return max_id;
+async function getCurrentPack(draft) {
+  try {
+    return await draft
+      .$relatedQuery('packs')
+      .orderBy('id', 'desc')
+      .limit(1)
+      .first();
+  } catch (e) {
+    console.log("No current pack");
+  }
 }
 
 async function getPackNames(pack_id) {
@@ -157,7 +163,7 @@ async function setUp() {
   try {
     await cleanupDb()
     const cubelist = await createCards();
-    createDraft(cubelist);
+    await createDraft(cubelist);
     console.log("Finished setup");
   } catch (e) {
     console.log("Error while setting up the server");
@@ -171,15 +177,15 @@ app.get('/api/hello', (req, res) => {
 });
 
 app.get('/api/current_pack', (req, res) => {
-  getCurrentDraftId()
-   .then(draft_id => getCurrentPackId(draft_id))
-   .then(pack_id => getPackNames(pack_id))
+  getCurrentDraft()
+   .then(draft => getCurrentPack(draft))
+   .then(pack => getPackNames(pack.id))
    .then(pack_names => res.send(get_pack_from_names(pack_names)));
 });
 
 app.post('/api/new_pack', (req, res) => {
-  getCurrentDraftId()
-    .then(draft_id => createPack(draft_id))
+  getCurrentDraft()
+    .then(draft => createPack(draft))
     .then(result => res.send({}));
 });
 

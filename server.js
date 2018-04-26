@@ -77,13 +77,13 @@ async function createShuffledCube(draft, cubelist) {
 
   for (i = 0; i < shuffled_cubelist.length; i++) {
     const cardname = shuffled_cubelist[i];
-    const cards = await Card
+    const card = await Card
       .query()
-      .where('name', '=', cardname);
-    const card = cards[0];
-    await ShuffledCube
-     .query()
-     .insert({draft_id: draft.id, card_id: card.id, position: i});
+      .where('name', '=', cardname)
+      .first();
+    await draft
+      .$relatedQuery('shuffled_cards')
+      .relate({id: card.id, position: i});
   }
 
   try {
@@ -98,30 +98,27 @@ async function createPack(draft) {
   const pack = await draft
     .$relatedQuery('packs')
     .insert({});
-  const pack_id = pack.id;
 
-  const shuffled_cube_entries = await ShuffledCube
-    .query()
-    .where('draft_id', '=', draft.id)
+  const shuffled_cards = await draft
+    .$relatedQuery('shuffled_cards')
     .orderBy('position')
     .limit(9);
-  const card_ids = shuffled_cube_entries.map((entry) => entry.card_id);
-  for (i = 0; i < shuffled_cube_entries.length; i++) {
-    const entry = shuffled_cube_entries[i];
-    const entry_id = entry.$id();
-    await ShuffledCube
-      .query()
-      .deleteById(entry_id);
+  for (i = 0; i < shuffled_cards.length; i++) {
+    const card = shuffled_cards[i];
+    await draft
+      .$relatedQuery('shuffled_cards')
+      .unrelate()
+      .where('id', card.id)
     await PackCard
       .query()
       .insert(
         {
-          card_id: entry.card_id,
+          card_id: card.id,
           pack_id: pack.id,
           row: Math.floor(i / 3),
           col: i % 3
-       }
-     )
+        }
+      );
   }
 }
 
@@ -166,7 +163,7 @@ async function setUp() {
     await createDraft(cubelist);
     console.log("Finished setup");
   } catch (e) {
-    console.log("Error while setting up the server");
+    console.log("Error while setting up the server", e);
   }
 }
 

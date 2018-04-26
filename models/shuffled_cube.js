@@ -14,12 +14,33 @@ class ShuffledCube extends Model {
   static get jsonSchema() {
     return {
       type: 'object',
-      required: ['position', 'draft_id', 'card_id'],
+      required: ['position'],
 
       properties: {
         position: { type: 'integer' },
         draft_id: { type: 'integer' },
         card_id: { type: 'integer' }
+      }
+    };
+  }
+
+  static get relationMappings() {
+    return {
+      card: {
+        relation: Model.BelongsToOneRelation,
+        modelClass: __dirname + '/card',
+        join: {
+          from: 'shuffled_cubes.card_id',
+          to: 'cards.id'
+        }
+      },
+      draft: {
+        relation: Model.BelongsToOneRelation,
+        modelClass: __dirname + '/draft',
+        join: {
+          from: 'shuffled_cubes.draft_id',
+          to: 'drafts.id'
+        }
       }
     };
   }

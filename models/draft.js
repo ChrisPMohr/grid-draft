@@ -16,6 +16,19 @@ class Draft extends Model {
       }
     };
   }
+
+  static get relationMappings() {
+    return {
+      packs: {
+        relation: Model.HasManyRelation,
+        modelClass: __dirname + '/pack',
+        join: {
+          from: 'drafts.id',
+          to: 'packs.draft_id'
+        }
+      }
+    }
+  }
 }
 
 module.exports = Draft;

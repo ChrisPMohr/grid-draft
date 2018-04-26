@@ -18,6 +18,19 @@ class Pack extends Model {
       }
     };
   }
+
+  static get relationMappings() {
+    return {
+      draft: {
+        relation: Model.BelongsToOneRelation,
+        modelClass: __dirname + '/draft',
+        join: {
+          from: 'packs.draft_id',
+          to: 'drafts.id'
+        }
+      }
+    }
+  }
 }
 
 module.exports = Pack;

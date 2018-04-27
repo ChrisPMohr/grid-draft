@@ -9,8 +9,9 @@ var sqlite3 = require('sqlite3').verbose()
 var Card = require('./models/card');
 var Draft = require('./models/draft');
 var Pack = require('./models/pack');
-var PackCard = require('./models/pack_card');
+var Decklist = require('./models/decklist');
 var ShuffledCubeCard = require('./models/shuffled_cube_card');
+var PackCard = require('./models/pack_card');
 
 const knex = Knex(knexConfig.development);
 
@@ -42,6 +43,7 @@ async function cleanupDb() {
   await Draft.query().delete();
   await Card.query().delete();
   await Pack.query().delete();
+  await Decklist.query().delete();
 
   // Remove junction tables
   await ShuffledCubeCard.query().delete();
@@ -62,16 +64,23 @@ async function createCards() {
 }
 
 async function createDraft(cubelist) {
-  const draft = await Draft
-    .query()
-    .insert({});
-
   try {
+    const draft = await Draft
+      .query()
+      .insert({});
+    createDecklist(draft, 1);
+    createDecklist(draft, 2);
     await createShuffledCube(draft, cubelist);
   } catch (e) {
-    console.log("Caught error shuffling cube", e);
+    console.log("Caught error creating cube", e);
     throw e;
   }
+}
+
+async function createDecklist(draft, player_number) {
+  return draft
+    .$relatedQuery('decklists')
+    .insert({player_number: player_number});
 }
 
 async function createShuffledCube(draft, cubelist) {
@@ -184,6 +193,11 @@ app.post('/api/new_pack', (req, res) => {
     .then(draft => createPack(draft))
     .then(result => res.send({}))
     .catch(e => console.log("POST /api/new_pack error: ", e));
+});
+
+app.post('/api/pick_cards', (req, res) => {
+  var row = req.query.row;
+  var col = req.query.col;
 });
 
 app.listen(port, () => console.log(`Listening on port ${port}`));

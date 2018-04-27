@@ -27,6 +27,14 @@ class Draft extends Model {
           to: 'packs.draft_id'
         }
       },
+      decklists: {
+        relation: Model.HasManyRelation,
+        modelClass: __dirname + '/decklist',
+        join: {
+          from: 'drafts.id',
+          to: 'decklists.draft_id'
+        }
+      },
       shuffled_cards: {
         relation: Model.ManyToManyRelation,
         modelClass: __dirname + '/card',

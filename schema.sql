@@ -14,6 +14,13 @@ CREATE TABLE packs (
   FOREIGN KEY(draft_id) REFERENCES drafts(id)
 );
 
+CREATE TABLE decklists (
+  id INTEGER PRIMARY KEY,
+  draft_id INTEGER,
+  player_number INTEGER,
+  FOREIGN KEY(draft_id) REFERENCES drafts(id)
+);
+
 CREATE TABLE shuffled_cube_cards (
   position INTEGER,
   draft_id INTEGER,
@@ -31,4 +38,12 @@ CREATE TABLE pack_cards (
   FOREIGN KEY(card_id) REFERENCES cards(id),
   FOREIGN KEY(pack_id) REFERENCES packs(id),
   PRIMARY KEY(pack_id, row, col)
+);
+
+CREATE TABLE decklist_cards (
+  card_id INTEGER,
+  decklist_id INTEGER,
+  FOREIGN KEY(card_id) REFERENCES cards(id),
+  FOREIGN KEY(decklist_id) REFERENCES decklists(id),
+  PRIMARY KEY(card_id, decklist_id)
 );

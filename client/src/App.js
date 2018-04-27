@@ -13,7 +13,7 @@ class Card extends Component {
   render() {
     return (
       <img
-        className="card-image"
+        className="grid-cell"
         src={this.state.url}
         alt={this.state.name}
         title={this.state.name}
@@ -26,6 +26,7 @@ class CardRow extends Component {
   render() {
     return (
       <div className="card-row">
+        <button className="row-button" />
         {this.props.data.map((card_data) =>
           <Card key={card_data.name} data={card_data} />)}
       </div>
@@ -83,7 +84,7 @@ class App extends Component {
         { this.state.response != null &&
           <div className="draft">
             {this.state.response.rows.map((row_data, i) =>
-              <CardRow key={i} data={row_data} />)}
+              <CardRow key={i} data={row_data} row_num={i} />)}
           </div>
         }
         <button onClick={() => this.getNewPack()}>

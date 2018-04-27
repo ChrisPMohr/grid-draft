@@ -22,7 +22,29 @@
   to { transform: rotate(360deg); }
 }
 
-img.card-image {
+.card-row {
+  height: 200px;
+  width: 650px;
+  position: relative;
+  margin: 0 auto;
+}
+
+.grid-cell {
   width: 140px;
   height: 200px;
 }
+
+.grid-button {
+  width: 70px;
+  height: 70px;
+  border: 0px;
+  background-image: url("https://static1.squarespace.com/static/55fc0004e4b069a519961e2d/t/55fc301ae4b01342ae9212a1/1442590746805/?format=300w")
+}
+
+.row-button {
+  position: absolute;
+  left: 15px;
+  top: 65px;
+}
+
+

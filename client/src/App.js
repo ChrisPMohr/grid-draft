@@ -26,7 +26,7 @@ class CardRow extends Component {
   render() {
     return (
       <div className="card-row">
-        <button className="row-button" />
+        <button className="row-button grid-button" />
         {this.props.data.map((card_data) =>
           <Card key={card_data.name} data={card_data} />)}
       </div>
@@ -34,9 +34,28 @@ class CardRow extends Component {
   }
 }
 
+class ColumnButtons extends Component {
+  render() {
+    var buttons = [];
+      for (var i=0; i < this.props.size; i++){
+        buttons.push(
+          (<button key={i} className="col-button grid-button"/>)
+        );
+      }
+
+
+    return (
+      <div className="col-button-row">
+        <div className="origin-spacer" />
+        {buttons}
+      </div>
+    )
+  }
+}
+
 class App extends Component {
   state = {
-    response: null 
+    response: null
   };
 
   componentDidMount() {
@@ -83,6 +102,7 @@ class App extends Component {
         </header>
         { this.state.response != null &&
           <div className="draft">
+            <ColumnButtons size={this.state.response.rows.length} />
             {this.state.response.rows.map((row_data, i) =>
               <CardRow key={i} data={row_data} row_num={i} />)}
           </div>

@@ -17,15 +17,9 @@
   font-size: large;
 }
 
-@keyframes App-logo-spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
-}
-
 .card-row {
   height: 200px;
   width: 650px;
-  position: relative;
   margin: 0 auto;
 }
 
@@ -42,9 +36,27 @@
 }
 
 .row-button {
-  position: absolute;
-  left: 15px;
-  top: 65px;
+  margin-top: 65px;
+  margin-bottom: 65px;
+  display: inline-block;
+  vertical-align: top;
 }
 
+.col-button {
+  margin-left: 35px;
+  margin-right: 35px;
+  display: inline-block;
+  vertical-align: bottom;
+}
 
+.origin-spacer {
+  display: inline-block;
+  width: 70px;
+  height: 70px;
+  vertical-align: bottom;
+}
+
+.col-button-row {
+  width: 650px;
+  margin: 0 auto;
+}

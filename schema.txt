@@ -4,22 +4,23 @@ CREATE TABLE cards (
 );
 
 CREATE TABLE drafts (
-  id INTEGER PRIMARY KEY
-);
-
-CREATE TABLE shuffled_cubes (
-  position INTEGER,
-  draft_id INTEGER,
-  card_id INTEGER,
-  FOREIGN KEY(draft_id) REFERENCES drafts(id),
-  FOREIGN KEY(card_id) REFERENCES cards(id),
-  PRIMARY KEY(draft_id, position)
+  id INTEGER PRIMARY KEY,
+  current_player_number INTEGER
 );
 
 CREATE TABLE packs (
   id INTEGER PRIMARY KEY,
   draft_id INTEGER,
   FOREIGN KEY(draft_id) REFERENCES drafts(id)
+);
+
+CREATE TABLE shuffled_cube_cards (
+  position INTEGER,
+  draft_id INTEGER,
+  card_id INTEGER,
+  FOREIGN KEY(draft_id) REFERENCES drafts(id),
+  FOREIGN KEY(card_id) REFERENCES cards(id),
+  PRIMARY KEY(draft_id, position)
 );
 
 CREATE TABLE pack_cards (

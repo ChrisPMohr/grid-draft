@@ -10,7 +10,7 @@ var Card = require('./models/card');
 var Draft = require('./models/draft');
 var Pack = require('./models/pack');
 var PackCard = require('./models/pack_card');
-var ShuffledCube = require('./models/shuffled_cube');
+var ShuffledCubeCard = require('./models/shuffled_cube_card');
 
 const knex = Knex(knexConfig.development);
 
@@ -41,8 +41,10 @@ function get_pack_from_names(pack_names) {
 async function cleanupDb() {
   await Draft.query().delete();
   await Card.query().delete();
-  await ShuffledCube.query().delete();
   await Pack.query().delete();
+
+  // Remove junction tables
+  await ShuffledCubeCard.query().delete();
   await PackCard.query().delete();
 }
 

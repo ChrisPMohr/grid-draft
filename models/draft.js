@@ -33,10 +33,10 @@ class Draft extends Model {
         join: {
           from: "drafts.id",
           through: {
-            from: "shuffled_cubes.draft_id",
-            to: "shuffled_cubes.card_id",
+            from: "shuffled_cube_cards.draft_id",
+            to: "shuffled_cube_cards.card_id",
             extra: ["position"],
-            modelClass: __dirname + '/shuffled_cube'
+            modelClass: __dirname + '/shuffled_cube_card'
           },
           to: "cards.id"
         }

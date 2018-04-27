@@ -2,9 +2,9 @@
 
 const Model = require('objection').Model;
 
-class ShuffledCube extends Model {
+class ShuffledCubeCard extends Model {
   static get tableName() {
-    return 'shuffled_cubes';
+    return 'shuffled_cube_cards';
   }
 
   static get idColumn() {
@@ -30,7 +30,7 @@ class ShuffledCube extends Model {
         relation: Model.BelongsToOneRelation,
         modelClass: __dirname + '/card',
         join: {
-          from: 'shuffled_cubes.card_id',
+          from: 'shuffled_cube_cards.card_id',
           to: 'cards.id'
         }
       },
@@ -38,7 +38,7 @@ class ShuffledCube extends Model {
         relation: Model.BelongsToOneRelation,
         modelClass: __dirname + '/draft',
         join: {
-          from: 'shuffled_cubes.draft_id',
+          from: 'shuffled_cube_cards.draft_id',
           to: 'drafts.id'
         }
       }
@@ -46,4 +46,4 @@ class ShuffledCube extends Model {
   }
 }
 
-module.exports = ShuffledCube;
+module.exports = ShuffledCubeCard;

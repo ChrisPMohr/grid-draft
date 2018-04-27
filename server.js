@@ -109,12 +109,11 @@ async function createPack(draft) {
       .$relatedQuery('shuffled_cards')
       .unrelate()
       .where('id', card.id)
-    await PackCard
-      .query()
-      .insert(
+    await pack
+      .$relatedQuery('cards')
+      .relate(
         {
-          card_id: card.id,
-          pack_id: pack.id,
+          id: card.id,
           row: Math.floor(i / 3),
           col: i % 3
         }
@@ -146,14 +145,11 @@ async function getCurrentPack(draft) {
   }
 }
 
-async function getPackNames(pack_id) {
-  const pack_cards = await PackCard
-    .query()
-    .select('pack_cards.*', 'cards.name as name')
-    .join('cards', 'pack_cards.card_id', 'cards.id')
-    .where('pack_id', '=', pack_id)
+async function getPackCardNames(pack) {
+  const cards = await pack
+    .$relatedQuery('cards')
     .orderBy(['row', 'col'])
-  return _.chunk(pack_cards.map((card) => card.name), 3)
+  return _.chunk(cards.map((card) => card.name), 3)
 }
 
 async function setUp() {
@@ -175,15 +171,17 @@ app.get('/api/hello', (req, res) => {
 
 app.get('/api/current_pack', (req, res) => {
   getCurrentDraft()
-   .then(draft => getCurrentPack(draft))
-   .then(pack => getPackNames(pack.id))
-   .then(pack_names => res.send(get_pack_from_names(pack_names)));
+    .then(draft => getCurrentPack(draft))
+    .then(pack => getPackCardNames(pack))
+    .then(pack_names => res.send(get_pack_from_names(pack_names)))
+    .catch(e => console.log("GET /api/current_pack error: ", e));
 });
 
 app.post('/api/new_pack', (req, res) => {
   getCurrentDraft()
     .then(draft => createPack(draft))
-    .then(result => res.send({}));
+    .then(result => res.send({}))
+    .catch(e => console.log("POST /api/new_pack error: ", e));
 });
 
 app.listen(port, () => console.log(`Listening on port ${port}`));

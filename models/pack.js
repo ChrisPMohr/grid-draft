@@ -28,8 +28,22 @@ class Pack extends Model {
           from: 'packs.draft_id',
           to: 'drafts.id'
         }
+      },
+      cards: {
+        relation: Model.ManyToManyRelation,
+        modelClass: __dirname + '/card',
+        join: {
+          from: "packs.id",
+          through: {
+            from: "pack_cards.pack_id",
+            to: "pack_cards.card_id",
+            extra: ["row", "col"],
+            modelClass: __dirname + '/pack_card'
+          },
+          to: "cards.id"
+        }
       }
-    }
+    };
   }
 }
 

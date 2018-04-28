@@ -179,6 +179,27 @@ async function pickRow(row_number) {
     throw "Row was already selected";
   }
 
+  await pickCards(draft, row_cards);
+}
+
+async function pickCol(col_number) {
+  const draft = await getCurrentDraft();
+  const pack = await getCurrentPack(draft);
+
+  const col_cards = await pack
+    .$relatedQuery('cards')
+    .where('col', '=', col_number)
+    .where('selected', '=', false);
+
+  // If there are no cards, the col has already been selected
+  if (col_cards.length == 0) {
+    throw "Column was already selected";
+  }
+
+  await pickCards(draft, col_cards);
+}
+
+async function pickCards(draft, pack_cards) {
   // If there are cards pick them and add them to the player's decklist
   current_player_number = draft.current_player_number
   const decklist = await draft
@@ -186,7 +207,7 @@ async function pickRow(row_number) {
     .where({player_number: current_player_number})
     .first();
 
-  for (var card of row_cards) {
+  for (var card of pack_cards) {
     await PackCard
       .query()
       .patch({selected: true})
@@ -198,10 +219,15 @@ async function pickRow(row_number) {
   }
 
   // Flip the current player
+  new_player_number = 1 - current_player_number
   await Draft
     .query()
-    .patch({current_player_number: 1 - current_player_number})
+    .patch({current_player_number: new_player_number})
     .where({id: draft.id});
+
+  if (new_player_number == 0) {
+    await createPack(draft);
+  }
 }
 
 async function setUp() {
@@ -254,7 +280,12 @@ app.post('/api/pick_cards', (req, res) => {
         res.send({});
       });
   } else if (col) {
-    res.send({});
+    pickCol(col - 1)
+      .then(result => res.send({}))
+      .catch(e => {
+        console.log("POST /api/pick_cards error: ", e);
+        res.send({});
+      });
   } else {
     console.log("POST /api/pick_cards error: 'row' or 'col is required:", req.body);
     res.send({});

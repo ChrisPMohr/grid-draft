@@ -41,6 +41,8 @@ class RowButton extends Component {
 
     if (response.status !== 200) throw Error(body.message);
 
+    await this.props.getCurrentPack();
+
     return body;
   };
 
@@ -70,6 +72,8 @@ class ColumnButton extends Component {
 
     if (response.status !== 200) throw Error(body.message);
 
+    await this.props.getCurrentPack();
+
     return body;
   };
 
@@ -84,7 +88,9 @@ class CardRow extends Component {
   render() {
     return (
       <div className="card-row">
-        <RowButton row_number={this.props.row_number} />
+        <RowButton
+          row_number={this.props.row_number}
+          getCurrentPack={this.props.getCurrentPack} />
         {this.props.data.map((card_data) =>
           <Card key={card_data.name} data={card_data} />)}
       </div>
@@ -97,7 +103,10 @@ class ColumnButtons extends Component {
     var buttons = [];
       for (var i=0; i < this.props.size; i++){
         buttons.push(
-          (<ColumnButton key={i} column_number={i + 1} />)
+          (<ColumnButton
+             key={i}
+             column_number={i + 1}
+             getCurrentPack={this.props.getCurrentPack} />)
         );
       }
 
@@ -112,6 +121,11 @@ class ColumnButtons extends Component {
 }
 
 class App extends Component {
+  constructor(props) {
+    super(props);
+    this.getCurrentPack = this.getCurrentPack.bind(this);
+  }
+  
   state = {
     response: null
   };
@@ -160,9 +174,15 @@ class App extends Component {
         </header>
         { this.state.response != null &&
           <div className="draft">
-            <ColumnButtons size={this.state.response.rows.length} />
+            <ColumnButtons
+              size={this.state.response.rows.length}
+              getCurrentPack={this.getCurrentPack} />
             {this.state.response.rows.map((row_data, i) =>
-              <CardRow key={i} data={row_data} row_number={i + 1} />)}
+              <CardRow
+                key={i}
+                data={row_data}
+                row_number={i + 1}
+                getCurrentPack={this.getCurrentPack} />)}
           </div>
         }
         <button onClick={() => this.getNewPack()}>

@@ -68,9 +68,9 @@ async function createDraft(cubelist) {
   try {
     const draft = await Draft
       .query()
-      .insert({});
+      .insert({current_player_number: 0});
+    createDecklist(draft, 0);
     createDecklist(draft, 1);
-    createDecklist(draft, 2);
     await createShuffledCube(draft, cubelist);
   } catch (e) {
     console.log("Caught error creating cube", e);
@@ -121,13 +121,14 @@ async function createPack(draft) {
       .$relatedQuery('shuffled_cards')
       .unrelate()
       .where('id', card.id)
-    await pack
+    const new_card = await pack
       .$relatedQuery('cards')
       .relate(
         {
           id: card.id,
           row: Math.floor(i / 3),
-          col: i % 3
+          col: i % 3,
+          selected: false
         }
       );
   }
@@ -164,6 +165,45 @@ async function getPackCardNames(pack) {
   return _.chunk(cards.map((card) => card.name), 3)
 }
 
+async function pickRow(row_number) {
+  const draft = await getCurrentDraft();
+  const pack = await getCurrentPack(draft);
+
+  const row_cards = await pack
+    .$relatedQuery('cards')
+    .where('row', '=', row_number)
+    .where('selected', '=', false);
+
+  // If there are no cards, the row has already been selected
+  if (row_cards.length == 0) {
+    throw "Row was already selected";
+  }
+
+  // If there are cards pick them and add them to the player's decklist
+  current_player_number = draft.current_player_number
+  const decklist = await draft
+    .$relatedQuery('decklists')
+    .where({player_number: current_player_number})
+    .first();
+
+  for (var card of row_cards) {
+    await PackCard
+      .query()
+      .patch({selected: true})
+      .where({card_id: card.id});
+
+    await decklist
+      .$relatedQuery('cards')
+      .relate({id: card.id});
+  }
+
+  // Flip the current player
+  await Draft
+    .query()
+    .patch({current_player_number: 1 - current_player_number})
+    .where({id: draft.id});
+}
+
 async function setUp() {
   try {
     await cleanupDb()
@@ -186,27 +226,39 @@ app.get('/api/current_pack', (req, res) => {
     .then(draft => getCurrentPack(draft))
     .then(pack => getPackCardNames(pack))
     .then(pack_names => res.send(get_pack_from_names(pack_names)))
-    .catch(e => console.log("GET /api/current_pack error: ", e));
+    .catch(e => {
+      console.log("GET /api/current_pack error: ", e);
+      res.send({});
+    });
 });
 
 app.post('/api/new_pack', (req, res) => {
   getCurrentDraft()
     .then(draft => createPack(draft))
     .then(result => res.send({}))
-    .catch(e => console.log("POST /api/new_pack error: ", e));
+    .catch(e => {
+      console.log("POST /api/new_pack error: ", e);
+      res.send({});
+    });
 });
 
 app.post('/api/pick_cards', (req, res) => {
   var row = req.body.row;
   var col = req.body.col;
+
   if (row) {
-    console.log("row: " + row);
+    pickRow(row - 1)
+      .then(result => res.send({}))
+      .catch(e => {
+        console.log("POST /api/pick_cards error: ", e);
+        res.send({});
+      });
   } else if (col) {
-    console.log("col: " + col);
+    res.send({});
   } else {
-    console.log("POST /api/pick_cards: 'row' or 'col is required:", req.body);
+    console.log("POST /api/pick_cards error: 'row' or 'col is required:", req.body);
+    res.send({});
   }
-  res.send({});
 });
 
 app.listen(port, () => console.log(`Listening on port ${port}`));

@@ -12,7 +12,8 @@ class Draft extends Model {
       type: 'object',
 
       properties: {
-        id: { type: 'integer' }
+        id: { type: 'integer' },
+        current_player_number: { type: 'integer' }
       }
     };
   }

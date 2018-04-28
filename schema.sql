@@ -35,6 +35,7 @@ CREATE TABLE pack_cards (
   col INTEGER,
   card_id INTEGER,
   pack_id INTEGER,
+  selected BOOLEAN,
   FOREIGN KEY(card_id) REFERENCES cards(id),
   FOREIGN KEY(pack_id) REFERENCES packs(id),
   PRIMARY KEY(pack_id, row, col)

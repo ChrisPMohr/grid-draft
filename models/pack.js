@@ -37,7 +37,7 @@ class Pack extends Model {
           through: {
             from: "pack_cards.pack_id",
             to: "pack_cards.card_id",
-            extra: ["row", "col"],
+            extra: ["row", "col", "selected"],
             modelClass: __dirname + '/pack_card'
           },
           to: "cards.id"

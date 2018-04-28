@@ -35,7 +35,7 @@ class Decklist extends Model {
         join: {
           from: "decklists.id",
           through: {
-            from: "decklist_cards.pack_id",
+            from: "decklist_cards.decklist_id",
             to: "decklist_cards.card_id"
           },
           to: "cards.id"

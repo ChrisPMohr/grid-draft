@@ -19,6 +19,7 @@ class PackCard extends Model {
       properties: {
         row: { type: 'integer' },
         col: { type: 'integer' },
+        selected: { type: 'boolean' },
         card_id: { type: 'integer' },
         pack_id: { type: 'integer' }
       }

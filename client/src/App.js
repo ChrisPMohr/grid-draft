@@ -22,11 +22,69 @@ class Card extends Component {
   }
 }
 
+class RowButton extends Component {
+  constructor(props) {
+    super(props);
+    this.handleClick = this.handleClick.bind(this);
+  }
+
+  handleClick = async () => {
+    const response = await fetch('/api/pick_cards', {
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({row: this.props.row_number}),
+      method: 'POST'
+    });
+    const body = await response.json();
+
+    if (response.status !== 200) throw Error(body.message);
+
+    return body;
+  };
+
+  render() {
+    return (
+      <button className="row-button grid-button" onClick={this.handleClick} />
+    )
+  }
+}
+
+class ColumnButton extends Component {
+  constructor(props) {
+    super(props);
+    this.handleClick = this.handleClick.bind(this);
+  }
+
+  handleClick = async () => {
+    const response = await fetch('/api/pick_cards', {
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({col: this.props.column_number}),
+      method: 'POST'
+    });
+    const body = await response.json();
+
+    if (response.status !== 200) throw Error(body.message);
+
+    return body;
+  };
+
+  render() {
+    return (
+      <button className="col-button grid-button" onClick={this.handleClick} />
+    )
+  }
+}
+
 class CardRow extends Component {
   render() {
     return (
       <div className="card-row">
-        <button className="row-button grid-button" />
+        <RowButton row_number={this.props.row_number} />
         {this.props.data.map((card_data) =>
           <Card key={card_data.name} data={card_data} />)}
       </div>
@@ -39,7 +97,7 @@ class ColumnButtons extends Component {
     var buttons = [];
       for (var i=0; i < this.props.size; i++){
         buttons.push(
-          (<button key={i} className="col-button grid-button"/>)
+          (<ColumnButton key={i} column_number={i + 1} />)
         );
       }
 
@@ -104,7 +162,7 @@ class App extends Component {
           <div className="draft">
             <ColumnButtons size={this.state.response.rows.length} />
             {this.state.response.rows.map((row_data, i) =>
-              <CardRow key={i} data={row_data} row_num={i} />)}
+              <CardRow key={i} data={row_data} row_number={i + 1} />)}
           </div>
         }
         <button onClick={() => this.getNewPack()}>

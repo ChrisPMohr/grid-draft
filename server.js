@@ -20,6 +20,7 @@ Model.knex(knex);
 const app = express();
 const port = process.env.PORT || 5000;
 
+app.use(express.json());
 app.use(express.static('public'))
 
 function image_url(card_name) {
@@ -196,8 +197,16 @@ app.post('/api/new_pack', (req, res) => {
 });
 
 app.post('/api/pick_cards', (req, res) => {
-  var row = req.query.row;
-  var col = req.query.col;
+  var row = req.body.row;
+  var col = req.body.col;
+  if (row) {
+    console.log("row: " + row);
+  } else if (col) {
+    console.log("col: " + col);
+  } else {
+    console.log("POST /api/pick_cards: 'row' or 'col is required:", req.body);
+  }
+  res.send({});
 });
 
 app.listen(port, () => console.log(`Listening on port ${port}`));

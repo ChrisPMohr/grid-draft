@@ -10,10 +10,11 @@ class Pack extends Model {
   static get jsonSchema() {
     return {
       type: 'object',
-//      required: ['draft_id'],
 
       properties: {
         id: { type: 'integer' },
+        selected_col: { type: 'integer' },
+        selected_row: { type: 'integer' },
         draft_id: { type: 'integer' }
       }
     };

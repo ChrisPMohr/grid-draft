@@ -41,7 +41,7 @@ class RowButton extends Component {
   render() {
     return (
       <button
-        className="row-button grid-button ion-arrow-right-a"
+        className={"row-button grid-button ion-arrow-right-a " + (this.props.selected ? "hidden" : "")}
         onClick={this.handleClick} />
     )
   }
@@ -74,7 +74,7 @@ class ColumnButton extends Component {
   render() {
     return (
       <button
-        className="col-button grid-button ion-arrow-down-a"
+        className={"col-button grid-button ion-arrow-down-a " + (this.props.selected ? "hidden": "")}
         onClick={this.handleClick} />
     )
   }
@@ -86,6 +86,7 @@ class CardRow extends Component {
       <div className="card-row">
         <RowButton
           row_number={this.props.row_number}
+          selected={this.props.selected}
           getCurrentPack={this.props.getCurrentPack} />
         {this.props.data.map((card_data) =>
           <Card key={card_data.name} data={card_data} />)}
@@ -102,6 +103,7 @@ class ColumnButtons extends Component {
           (<ColumnButton
              key={i}
              column_number={i + 1}
+             selected={this.props.selectedCol === i}
              getCurrentPack={this.props.getCurrentPack} />)
         );
       }
@@ -121,9 +123,11 @@ class App extends Component {
     super(props);
     this.getCurrentPack = this.getCurrentPack.bind(this);
   }
-  
+
   state = {
-    cards: null
+    cards: null,
+    selectedCol: null,
+    selectedRow: null
   };
 
   componentDidMount() {
@@ -133,7 +137,11 @@ class App extends Component {
   getCurrentPack() {
     this.getCurrentPackApi()
       .then(res => {
-        this.setState({ cards: res.cards })
+        this.setState({
+          cards: res.cards,
+          selectedCol: res.selected_col,
+          selectedRow: res.selected_row
+        })
       })
       .catch(err => console.log(err));
   }
@@ -174,12 +182,14 @@ class App extends Component {
           <div className="draft">
             <ColumnButtons
               size={this.state.cards.length}
+              selectedCol={this.state.selectedCol}
               getCurrentPack={this.getCurrentPack} />
             {this.state.cards.map((row_data, i) =>
               <CardRow
                 key={i}
                 data={row_data}
                 row_number={i + 1}
+                selected={this.state.selectedRow === i}
                 getCurrentPack={this.getCurrentPack} />)}
           </div>
         }

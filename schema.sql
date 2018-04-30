@@ -10,6 +10,8 @@ CREATE TABLE drafts (
 
 CREATE TABLE packs (
   id INTEGER PRIMARY KEY,
+  selected_col INTEGER,
+  selected_row INTEGER,
   draft_id INTEGER,
   FOREIGN KEY(draft_id) REFERENCES drafts(id)
 );

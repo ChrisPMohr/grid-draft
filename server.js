@@ -10,8 +10,10 @@ var Card = require('./models/card');
 var Draft = require('./models/draft');
 var Pack = require('./models/pack');
 var Decklist = require('./models/decklist');
+
 var ShuffledCubeCard = require('./models/shuffled_cube_card');
 var PackCard = require('./models/pack_card');
+var DecklistCard = require('./models/decklist_card');
 
 const knex = Knex(knexConfig.development);
 
@@ -36,6 +38,7 @@ async function cleanupDb() {
   // Remove junction tables
   await ShuffledCubeCard.query().delete();
   await PackCard.query().delete();
+  await DecklistCard.query().delete();
 }
 
 async function createCards() {
@@ -144,7 +147,7 @@ async function getCurrentPack(draft) {
   }
 }
 
-async function getPackJson(pack) {
+async function getPackCardsJson(pack) {
   const cards = await pack
     .$relatedQuery('cards')
     .orderBy(['row', 'col'])
@@ -158,41 +161,61 @@ async function getPackJson(pack) {
     ), 3);
 }
 
+function isFirstPick(pack) {
+  return pack.selected_row == null && pack.selected_col == null;
+}
+
 async function pickRow(row_number) {
   const draft = await getCurrentDraft();
   const pack = await getCurrentPack(draft);
+
+  const is_first_pick = isFirstPick(pack);
+
+  if (pack.selected_row === row_number) {
+    throw "Row was already selected";
+  }
 
   const row_cards = await pack
     .$relatedQuery('cards')
     .where('row', '=', row_number)
     .where('selected', '=', false);
 
-  // If there are no cards, the row has already been selected
-  if (row_cards.length == 0) {
-    throw "Row was already selected";
-  }
+  await pickCards(draft, row_cards, is_first_pick);
 
-  await pickCards(draft, row_cards);
+  if (is_first_pick) {
+    await Pack
+      .query()
+      .patch({selected_row: row_number})
+      .where({id: pack.id});
+  }
 }
 
 async function pickCol(col_number) {
   const draft = await getCurrentDraft();
   const pack = await getCurrentPack(draft);
 
+  const is_first_pick = isFirstPick(pack);
+
+  if (pack.selected_col === col_number) {
+    throw "Column was already selected";
+  }
+
   const col_cards = await pack
     .$relatedQuery('cards')
     .where('col', '=', col_number)
     .where('selected', '=', false);
 
-  // If there are no cards, the col has already been selected
-  if (col_cards.length == 0) {
-    throw "Column was already selected";
-  }
+  await pickCards(draft, col_cards, is_first_pick);
 
-  await pickCards(draft, col_cards);
+  if (is_first_pick) {
+    await Pack
+      .query()
+      .patch({selected_col: col_number})
+      .where({id: pack.id});
+  }
 }
 
-async function pickCards(draft, pack_cards) {
+async function pickCards(draft, pack_cards, is_first_pick) {
   // If there are cards pick them and add them to the player's decklist
   current_player_number = draft.current_player_number
   const decklist = await draft
@@ -211,16 +234,29 @@ async function pickCards(draft, pack_cards) {
       .relate({id: card.id});
   }
 
-  // Flip the current player
-  new_player_number = 1 - current_player_number
-  await Draft
-    .query()
-    .patch({current_player_number: new_player_number})
-    .where({id: draft.id});
-
-  if (new_player_number == 0) {
+  if (is_first_pick) {
+    // If first pick on this pack, flip the current player
+    new_player_number = 1 - current_player_number
+    await Draft
+      .query()
+      .patch({current_player_number: new_player_number})
+      .where({id: draft.id});
+  } else {
+    // Keep player number the same and create a new pack
     await createPack(draft);
   }
+}
+
+async function getCurrentState(draft) {
+  const pack = await getCurrentPack(draft);
+  const pack_cards_json = await getPackCardsJson(pack);
+
+  return {
+    cards: pack_cards_json,
+    selected_row: pack.selected_row,
+    selected_col: pack.selected_col,
+    current_player_number: draft.current_player_number
+  };
 }
 
 async function setUp() {
@@ -242,9 +278,8 @@ app.get('/api/hello', (req, res) => {
 
 app.get('/api/current_pack', (req, res) => {
   getCurrentDraft()
-    .then(draft => getCurrentPack(draft))
-    .then(pack => getPackJson(pack))
-    .then(pack_json => res.send({cards: pack_json}))
+    .then(draft => getCurrentState(draft))
+    .then(json => res.send(json))
     .catch(e => {
       console.log("GET /api/current_pack error: ", e);
       res.send({});

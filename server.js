@@ -27,19 +27,6 @@ function image_url(card_name) {
   return "/images/" + card_name
 }
 
-function get_pack_from_names(pack_names) {
-  return {
-    rows: pack_names.map((row) =>
-      row.map((card_name) => (
-        {
-          name: card_name,
-          url: image_url(card_name)
-        })
-      )
-    )
-  }
-}
-
 async function cleanupDb() {
   await Draft.query().delete();
   await Card.query().delete();
@@ -134,8 +121,7 @@ async function createPack(draft) {
   }
 }
 
-async function getCurrentDraft() {
-  try {
+async function getCurrentDraft() { try {
     return await Draft
       .query()
       .orderBy('id', 'desc')
@@ -158,11 +144,18 @@ async function getCurrentPack(draft) {
   }
 }
 
-async function getPackCardNames(pack) {
+async function getPackJson(pack) {
   const cards = await pack
     .$relatedQuery('cards')
     .orderBy(['row', 'col'])
-  return _.chunk(cards.map((card) => card.name), 3)
+  return _.chunk(
+    cards.map((card) => (
+      {
+        name: card.name,
+        selected: card.selected,
+        url: image_url(card.name)
+      })
+    ), 3);
 }
 
 async function pickRow(row_number) {
@@ -250,8 +243,8 @@ app.get('/api/hello', (req, res) => {
 app.get('/api/current_pack', (req, res) => {
   getCurrentDraft()
     .then(draft => getCurrentPack(draft))
-    .then(pack => getPackCardNames(pack))
-    .then(pack_names => res.send(get_pack_from_names(pack_names)))
+    .then(pack => getPackJson(pack))
+    .then(pack_json => res.send({cards: pack_json}))
     .catch(e => {
       console.log("GET /api/current_pack error: ", e);
       res.send({});

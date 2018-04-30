@@ -2,21 +2,13 @@ import React, { Component } from 'react';
 import './App.css';
 
 class Card extends Component {
-  constructor(props) {
-    super(props);
-    this.state = {
-      url: props.data.url,
-      name: props.data.name
-    }
-  }
-
   render() {
     return (
       <img
-        className="grid-cell"
-        src={this.state.url}
-        alt={this.state.name}
-        title={this.state.name}
+        className={"card-image " + (this.props.data.selected ? "selected" : "")}
+        src={this.props.data.url}
+        alt={this.props.data.name}
+        title={this.props.data.name}
       />
     )
   }
@@ -48,7 +40,9 @@ class RowButton extends Component {
 
   render() {
     return (
-      <button className="row-button grid-button" onClick={this.handleClick} />
+      <button
+        className="row-button grid-button ion-arrow-right-a"
+        onClick={this.handleClick} />
     )
   }
 }
@@ -79,7 +73,9 @@ class ColumnButton extends Component {
 
   render() {
     return (
-      <button className="col-button grid-button" onClick={this.handleClick} />
+      <button
+        className="col-button grid-button ion-arrow-down-a"
+        onClick={this.handleClick} />
     )
   }
 }
@@ -127,7 +123,7 @@ class App extends Component {
   }
   
   state = {
-    response: null
+    cards: null
   };
 
   componentDidMount() {
@@ -136,7 +132,9 @@ class App extends Component {
 
   getCurrentPack() {
     this.getCurrentPackApi()
-      .then(res => this.setState({ response: res }))
+      .then(res => {
+        this.setState({ cards: res.cards })
+      })
       .catch(err => console.log(err));
   }
 
@@ -172,12 +170,12 @@ class App extends Component {
         <header className="App-header">
           <h1 className="App-title">Welcome to Grid Draft</h1>
         </header>
-        { this.state.response != null &&
+        { this.state.cards != null &&
           <div className="draft">
             <ColumnButtons
-              size={this.state.response.rows.length}
+              size={this.state.cards.length}
               getCurrentPack={this.getCurrentPack} />
-            {this.state.response.rows.map((row_data, i) =>
+            {this.state.cards.map((row_data, i) =>
               <CardRow
                 key={i}
                 data={row_data}

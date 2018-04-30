@@ -23,16 +23,19 @@
   margin: 0 auto;
 }
 
-.grid-cell {
+.card-image {
   width: 140px;
   height: 200px;
+}
+
+.selected {
+  filter: grayscale(100%);
 }
 
 .grid-button {
   width: 70px;
   height: 70px;
   border: 0px;
-  background-image: url("https://static1.squarespace.com/static/55fc0004e4b069a519961e2d/t/55fc301ae4b01342ae9212a1/1442590746805/?format=300w")
 }
 
 .row-button {

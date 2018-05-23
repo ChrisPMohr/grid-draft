@@ -259,6 +259,21 @@ async function getCurrentState(draft) {
   };
 }
 
+async function getDecklistCardJson(draft, player_number) {
+  const decklist = await draft
+    .$relatedQuery('decklists')
+    .where({player_number: player_number})
+    .first();
+  const cards = await decklist
+    .$relatedQuery('cards');
+  return cards.map((card) => (
+    {
+      name: card.name,
+      url: image_url(card.name)
+    })
+  );
+}
+
 async function setUp() {
   try {
     await cleanupDb()
@@ -282,6 +297,17 @@ app.get('/api/current_pack', (req, res) => {
     .then(json => res.send(json))
     .catch(e => {
       console.log("GET /api/current_pack error: ", e);
+      res.send({});
+    });
+});
+
+app.get('/api/decklist/:player_number', (req, res) => {
+  player_number_int = parseInt(req.params.player_number);
+  getCurrentDraft()
+    .then(draft => getDecklistCardJson(draft, player_number_int))
+    .then(json => res.send(json))
+    .catch(e => {
+      console.log("GET /api/decklist/<player_num> error: ", e);
       res.send({});
     });
 });

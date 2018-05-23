@@ -146,25 +146,8 @@ class App extends Component {
       .catch(err => console.log(err));
   }
 
-  getNewPack() {
-    this.postNewPackApi()
-      .then(res => this.getCurrentPack())
-      .catch(err => console.log(err));
-  }
-
   getCurrentPackApi = async () => {
     const response = await fetch('/api/current_pack');
-    const body = await response.json();
-
-    if (response.status !== 200) throw Error(body.message);
-
-    return body;
-  };
-
-  postNewPackApi = async () => {
-    const response = await fetch('/api/new_pack', {
-      method: 'POST'
-    });
     const body = await response.json();
 
     if (response.status !== 200) throw Error(body.message);
@@ -193,9 +176,6 @@ class App extends Component {
                 getCurrentPack={this.getCurrentPack} />)}
           </div>
         }
-        <button onClick={() => this.getNewPack()}>
-          Get new pack!
-        </button>
       </div>
     );
   }

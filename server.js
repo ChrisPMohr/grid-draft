@@ -286,16 +286,6 @@ app.get('/api/current_pack', (req, res) => {
     });
 });
 
-app.post('/api/new_pack', (req, res) => {
-  getCurrentDraft()
-    .then(draft => createPack(draft))
-    .then(result => res.send({}))
-    .catch(e => {
-      console.log("POST /api/new_pack error: ", e);
-      res.send({});
-    });
-});
-
 app.post('/api/pick_cards', (req, res) => {
   var row = req.body.row;
   var col = req.body.col;

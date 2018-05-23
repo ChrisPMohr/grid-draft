@@ -17,53 +17,6 @@
   font-size: large;
 }
 
-.card-row {
-  height: 200px;
-  width: 650px;
-  margin: 0 auto;
-}
-
-.card-image {
-  width: 140px;
-  height: 200px;
-}
-
-.selected {
-  filter: grayscale(100%);
-}
-
-.grid-button {
-  width: 70px;
-  height: 70px;
-  border: 0px;
-}
-
-.row-button {
-  margin-top: 65px;
-  margin-bottom: 65px;
-  display: inline-block;
-  vertical-align: top;
-}
-
-.col-button {
-  margin-left: 35px;
-  margin-right: 35px;
-  display: inline-block;
-  vertical-align: bottom;
-}
-
-.origin-spacer {
-  display: inline-block;
-  width: 70px;
-  height: 70px;
-  vertical-align: bottom;
-}
-
-.col-button-row {
-  width: 650px;
-  margin: 0 auto;
-}
-
 .hidden {
   visibility: hidden;
 }

@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "scripts": {
     "client": "cd client && yarn start",
-    "server": "nodemon server.js",
+    "server": "REDIS_STORE_URI=redis://localhost REDIS_STORE_SECRET=session_secret nodemon server.js",
     "dev": "concurrently --kill-others-on-fail \"yarn server\" \"yarn client\""
   },
   "dependencies": {

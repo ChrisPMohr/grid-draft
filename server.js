@@ -31,7 +31,6 @@ function image_url(card_name) {
 
 async function cleanupDb() {
   await Draft.query().delete();
-  await Card.query().delete();
   await Pack.query().delete();
   await Decklist.query().delete();
 
@@ -41,7 +40,14 @@ async function cleanupDb() {
   await DecklistCard.query().delete();
 }
 
-async function createCards() {
+
+// not currently used
+async function cleanupCube() {
+  await Card.query().delete();
+}
+
+// not currently used
+async function createCube() {
   cubelist_path = "cubelist.txt"
   var cubelist = fs.readFileSync(cubelist_path).toString().trim().split('\n');
 
@@ -54,14 +60,14 @@ async function createCards() {
   return cubelist;
 }
 
-async function createDraft(cubelist) {
+async function createDraft() {
   try {
     const draft = await Draft
       .query()
       .insert({current_player_number: 0});
     createDecklist(draft, 0);
     createDecklist(draft, 1);
-    await createShuffledCube(draft, cubelist);
+    await createShuffledCube(draft);
   } catch (e) {
     console.log("Caught error creating cube", e);
     throw e;
@@ -74,15 +80,14 @@ async function createDecklist(draft, player_number) {
     .insert({player_number: player_number});
 }
 
-async function createShuffledCube(draft, cubelist) {
-  shuffled_cubelist = _.shuffle(cubelist);
+async function createShuffledCube(draft) {
+  const cards = await Card
+    .query();
 
-  for (i = 0; i < shuffled_cubelist.length; i++) {
-    const cardname = shuffled_cubelist[i];
-    const card = await Card
-      .query()
-      .where('name', '=', cardname)
-      .first();
+  shuffled_cards = _.shuffle(cards);
+
+  for (i = 0; i < shuffled_cards.length; i++) {
+    const card = shuffled_cards[i];
     await draft
       .$relatedQuery('shuffled_cards')
       .relate({id: card.id, position: i});
@@ -277,8 +282,7 @@ async function getDecklistCardJson(draft, player_number) {
 async function setUp() {
   try {
     await cleanupDb()
-    const cubelist = await createCards();
-    await createDraft(cubelist);
+    await createDraft();
     console.log("Finished setup");
   } catch (e) {
     console.log("Error while setting up the server", e);

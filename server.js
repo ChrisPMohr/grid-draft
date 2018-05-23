@@ -1,10 +1,16 @@
 var _ = require("underscore");
 var fs  = require("fs");
-var express = require('express');
+
 var Knex = require('knex');
 var knexConfig = require('./knexfile');
 var { raw, Model } = require('objection');
 var sqlite3 = require('sqlite3').verbose()
+
+var express = require('express');
+var bodyParser = require('body-parser')
+var passport = require('passport')
+var session = require('express-session')
+var RedisStore = require('connect-redis')(session)
 
 var Card = require('./models/card');
 var Draft = require('./models/draft');
@@ -24,6 +30,30 @@ const port = process.env.PORT || 5000;
 
 app.use(express.json());
 app.use(express.static('public'))
+
+app.use(bodyParser.json())
+
+// TODO: Move this somewhere more appropriate
+const config = {}
+
+config.redisStore = {
+  url: process.env.REDIS_STORE_URI,
+  secret: process.env.REDIS_STORE_SECRET
+}
+
+require('./authentication').init(app)
+
+app.use(session({
+  store: new RedisStore({
+    url: config.redisStore.url
+  }),
+  secret: config.redisStore.secret,
+  resave: false,
+  saveUninitialized: false
+}))
+
+app.use(passport.initialize())
+app.use(passport.session())
 
 function image_url(card_name) {
   return "/images/" + card_name
@@ -339,5 +369,11 @@ app.post('/api/pick_cards', (req, res) => {
     res.send({});
   }
 });
+
+app.get('/', (req, res) => {
+  res.send({'text': 'welcome to grid-draft'});
+})
+
+require('./user').init(app)
 
 app.listen(port, () => console.log(`Listening on port ${port}`));

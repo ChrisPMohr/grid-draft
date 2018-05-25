@@ -311,7 +311,7 @@ async function getDecklistCardJson(draft, player_number) {
 
 async function setUp() {
   try {
-    await cleanupDb()
+    await cleanupDb();
     await createDraft();
     console.log("Finished setup");
   } catch (e) {

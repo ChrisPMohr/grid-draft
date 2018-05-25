@@ -50,3 +50,9 @@ CREATE TABLE decklist_cards (
   FOREIGN KEY(decklist_id) REFERENCES decklists(id),
   PRIMARY KEY(card_id, decklist_id)
 );
+
+CREATE TABLE users (
+  id INTEGER PRIMARY KEY,
+  username TEXT,
+  hashed_password TEXT
+);

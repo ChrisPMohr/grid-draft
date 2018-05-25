@@ -1,63 +1,39 @@
-const passport = require('passport')
-const bcrypt = require('bcrypt')
-const LocalStrategy = require('passport-local').Strategy
+var passport = require('passport')
+var bcrypt = require('bcrypt')
+var LocalStrategy = require('passport-local').Strategy
 
-const requireLoggedIn = require('./middleware')
+var requireLoggedIn = require('./middleware')
 
-// Generate Password
-const saltRounds = 10
-const myPlaintextPassword = 'my-password'
-const salt = bcrypt.genSaltSync(saltRounds)
-const passwordHash = bcrypt.hashSync(myPlaintextPassword, salt)
+var User = require('../models/user');
 
-const user = {
-  username: 'test-user',
-  passwordHash,
-  id: 1
-}
-
-function findUser (username, callback) {
-  if (username === user.username) {
-    return callback(null, user)
-  }
-  return callback(null)
-}
-
-passport.serializeUser(function (user, cb) {
-  cb(null, user.username)
+passport.serializeUser(function (user, done) {
+  done(null, user.id)
 })
 
-passport.deserializeUser(function (username, cb) {
-  findUser(username, cb)
+passport.deserializeUser(function (id, done) {
+  User.query().findById(id).then(function (admin) {
+    done(null, admin)
+  })
 })
 
 function initPassport () {
   passport.use(new LocalStrategy(
     (username, password, done) => {
-      findUser(username, (err, user) => {
-        if (err) {
-          return done(err)
-        }
+      User
+        .query()
+        .where('username', username)
+        .first()
+        .then(function (user) {
+          if (!user) return done(null, false, { message: 'Unknown user' })
 
-        // User not found
-        if (!user) {
-          console.log('User not found');
-          return done(null, false)
-        }
-
-        // Always use hashed passwords and fixed time comparison
-        bcrypt.compare(password, user.passwordHash, (err, isValid) => {
-          if (err) {
-            console.log("Error checking password");
-            return done(err)
-          }
-          if (!isValid) {
-            console.log("Password not valid");
-            return done(null, false)
-          }
-          return done(null, user)
+          user.verifyPassword(password, function (err, passwordCorrect) {
+            if (err) { return done(err) }
+            if (!passwordCorrect) { return done(null, false) }
+            return done(null, user)
+          })
+        }).catch(function (err) {
+          done(err)
         })
-      })
     }
   ))
 

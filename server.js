@@ -321,58 +321,57 @@ async function setUp() {
 
 setUp();
 
-app.get('/api/hello', (req, res) => {
-  res.send({ express: 'Hello From Express' });
-});
-
-app.get('/api/current_pack', (req, res) => {
-  getCurrentDraft()
-    .then(draft => getCurrentState(draft))
-    .then(json => res.send(json))
-    .catch(e => {
-      console.log("GET /api/current_pack error: ", e);
-      res.send({});
-    });
-});
-
-app.get('/api/decklist/:player_number', (req, res) => {
-  player_number_int = parseInt(req.params.player_number);
-  getCurrentDraft()
-    .then(draft => getDecklistCardJson(draft, player_number_int))
-    .then(json => res.send(json))
-    .catch(e => {
-      console.log("GET /api/decklist/<player_num> error: ", e);
-      res.send({});
-    });
-});
-
-app.post('/api/pick_cards', (req, res) => {
-  var row = req.body.row;
-  var col = req.body.col;
-
-  if (row) {
-    pickRow(row - 1)
-      .then(result => res.send({}))
+app.get('/api/current_pack',
+  passport.requireLoggedIn(),
+  (req, res) => {
+    getCurrentDraft()
+      .then(draft => getCurrentState(draft))
+      .then(json => res.send(json))
       .catch(e => {
-        console.log("POST /api/pick_cards error: ", e);
+        console.log("GET /api/current_pack error: ", e);
         res.send({});
       });
-  } else if (col) {
-    pickCol(col - 1)
-      .then(result => res.send({}))
-      .catch(e => {
-        console.log("POST /api/pick_cards error: ", e);
-        res.send({});
-      });
-  } else {
-    console.log("POST /api/pick_cards error: 'row' or 'col is required:", req.body);
-    res.send({});
-  }
 });
 
-app.get('/', (req, res) => {
-  res.send({'text': 'welcome to grid-draft'});
-})
+app.get('/api/decklist/:player_number',
+  passport.requireLoggedIn(),
+  (req, res) => {
+    player_number_int = parseInt(req.params.player_number);
+    getCurrentDraft()
+      .then(draft => getDecklistCardJson(draft, player_number_int))
+      .then(json => res.send(json))
+      .catch(e => {
+        console.log("GET /api/decklist/<player_num> error: ", e);
+        res.send({});
+      });
+});
+
+app.post('/api/pick_cards',
+  passport.requireLoggedIn(),
+  (req, res) => {
+    console.log("Picking cards for user", req.user.username);
+    var row = req.body.row;
+    var col = req.body.col;
+
+    if (row) {
+      pickRow(row - 1)
+        .then(result => res.send({}))
+        .catch(e => {
+          console.log("POST /api/pick_cards error: ", e);
+          res.send({});
+        });
+    } else if (col) {
+      pickCol(col - 1)
+        .then(result => res.send({}))
+        .catch(e => {
+          console.log("POST /api/pick_cards error: ", e);
+          res.send({});
+        });
+    } else {
+      console.log("POST /api/pick_cards error: 'row' or 'col is required:", req.body);
+      res.send({});
+    }
+});
 
 require('./user').init(app)
 

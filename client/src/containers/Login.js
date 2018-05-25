@@ -24,11 +24,12 @@ export default class Login extends Component {
   handleSubmit = async event => {
     event.preventDefault();
 
-    const response = await fetch('/api/login', {
+    const response = await fetch('/auth/login', {
       headers: {
         'Accept': 'application/json',
         'Content-Type': 'application/json'
       },
+      credentials: 'same-origin',
       body: JSON.stringify(
         {
           username: this.state.username,
@@ -41,8 +42,6 @@ export default class Login extends Component {
     if (response.status !== 200) {
       throw Error(body.message);
     }
-
-    alert("Logged in");
   }
 
   render() {

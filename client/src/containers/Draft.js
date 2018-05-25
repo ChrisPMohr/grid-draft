@@ -27,6 +27,7 @@ class RowButton extends Component {
         'Accept': 'application/json',
         'Content-Type': 'application/json'
       },
+      credentials: 'same-origin',
       body: JSON.stringify({row: this.props.row_number}),
       method: 'POST'
     });
@@ -60,6 +61,7 @@ class ColumnButton extends Component {
         'Accept': 'application/json',
         'Content-Type': 'application/json'
       },
+      credentials: 'same-origin',
       body: JSON.stringify({col: this.props.column_number}),
       method: 'POST'
     });
@@ -148,7 +150,9 @@ export default class Draft extends Component {
   }
 
   getCurrentPackApi = async () => {
-    const response = await fetch('/api/current_pack');
+    const response = await fetch('/api/current_pack', {
+      credentials: 'same-origin',
+    });
     const body = await response.json();
 
     if (response.status !== 200) throw Error(body.message);

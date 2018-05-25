@@ -1,7 +1,8 @@
 import React, { Component } from "react";
+import { withRouter } from 'react-router-dom'
 import "./Login.css";
 
-export default class Login extends Component {
+export default withRouter(class Login extends Component {
   constructor(props) {
     super(props);
 
@@ -37,11 +38,13 @@ export default class Login extends Component {
         }),
       method: 'POST'
     });
-    const body = await response.json();
 
     if (response.status !== 200) {
-      throw Error(body.message);
+      alert("Login failed!");
+      throw Error("Login failed");
     }
+
+    this.props.history.push('/');
   }
 
   render() {
@@ -76,4 +79,4 @@ export default class Login extends Component {
       </div>
     );
   }
-}
+})

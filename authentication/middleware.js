@@ -3,8 +3,7 @@ function requireLoggedIn () {
     if (req.isAuthenticated()) {
       return next()
     }
-    res.status(401);
-    res.send({"message": "authenciation is required"});
+    res.status(401).send({"message": "authenciation is required"});
   }
 }
 

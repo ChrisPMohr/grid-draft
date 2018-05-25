@@ -41,16 +41,18 @@ function initPassport () {
 
         // User not found
         if (!user) {
-          console.log('User not found')
+          console.log('User not found');
           return done(null, false)
         }
 
         // Always use hashed passwords and fixed time comparison
         bcrypt.compare(password, user.passwordHash, (err, isValid) => {
           if (err) {
+            console.log("Error checking password");
             return done(err)
           }
           if (!isValid) {
+            console.log("Password not valid");
             return done(null, false)
           }
           return done(null, user)

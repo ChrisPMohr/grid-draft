@@ -3,7 +3,7 @@
 }
 
 .App-header {
-  background-color: #222;
+  background-color: #999;
   height: 50px;
   padding: 20px;
   color: white;
@@ -20,7 +20,7 @@
   font-size: 1.5em;
   float: right;
   padding: 5px;
-  color: grey;
+  color: #333;
 }
 
 .App-intro {

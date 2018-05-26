@@ -21,6 +21,8 @@
   float: right;
   padding: 5px;
   color: #333;
+  cursor: pointer;
+  text-decoration: none;
 }
 
 .App-intro {

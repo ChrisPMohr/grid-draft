@@ -12,6 +12,13 @@ function initUser (app) {
     function (req, res) {
       res.send({"message": "auth succeeded"});
   });
+
+  app.post('/auth/logout',
+    passport.requireLoggedIn(),
+    function (req, res) {
+      req.logout();
+      res.send({"message": "logout succeeded"});
+  });
 }
 
 

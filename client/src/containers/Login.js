@@ -1,8 +1,9 @@
 import React, { Component } from "react";
-import { withRouter } from 'react-router-dom'
 import "./Login.css";
 
-export default withRouter(class Login extends Component {
+import { AuthConsumer } from '../AuthContext';
+
+export default class Login extends Component {
   constructor(props) {
     super(props);
 
@@ -22,7 +23,7 @@ export default withRouter(class Login extends Component {
     });
   }
 
-  handleSubmit = async event => {
+  handleLogin = async (event, authContext) => {
     event.preventDefault();
 
     const response = await fetch('/auth/login', {
@@ -44,39 +45,44 @@ export default withRouter(class Login extends Component {
       throw Error("Login failed");
     }
 
+    authContext.login();
     this.props.history.push('/');
   }
 
   render() {
     return (
       <div className="Login">
-        <form onSubmit={this.handleSubmit}>
-          <div>
-            <label>Username</label>
-            <input
-              name="username"
-              autoFocus
-              type="text"
-              value={this.state.username}
-              onChange={this.handleChange}
-            />
-          </div>
-          <div>
-            <label>Password</label>
-            <input
-              name="password"
-              value={this.state.password}
-              onChange={this.handleChange}
-              type="password"
-            />
-          </div>
-          <input
-            disabled={!this.validateForm()}
-            type="submit"
-            value="Login"
-          />
-        </form>
+        <AuthConsumer>
+          {(context) => (
+            <form onSubmit={event => this.handleLogin(event, context)}>
+              <div>
+                <label>Username</label>
+                <input
+                  name="username"
+                  autoFocus
+                  type="text"
+                  value={this.state.username}
+                  onChange={this.handleChange}
+                />
+              </div>
+              <div>
+                <label>Password</label>
+                <input
+                  name="password"
+                  value={this.state.password}
+                  onChange={this.handleChange}
+                  type="password"
+                />
+              </div>
+                <input
+                  disabled={!this.validateForm()}
+                  type="submit"
+                  value="Login"
+                />
+            </form>
+          )}
+        </AuthConsumer>
       </div>
     );
   }
-})
+}

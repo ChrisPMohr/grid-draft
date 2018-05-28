@@ -20,6 +20,7 @@ var Decklist = require('./models/decklist');
 var ShuffledCubeCard = require('./models/shuffled_cube_card');
 var PackCard = require('./models/pack_card');
 var DecklistCard = require('./models/decklist_card');
+var DraftPlayerSeat = require('./models/draft_player_seat');
 
 const knex = Knex(knexConfig.development);
 
@@ -68,6 +69,7 @@ async function cleanupDb() {
   await ShuffledCubeCard.query().delete();
   await PackCard.query().delete();
   await DecklistCard.query().delete();
+  await DraftPlayerSeat.query().delete();
 }
 
 

@@ -49,6 +49,20 @@ class Draft extends Model {
           },
           to: "cards.id"
         }
+      },
+      players: {
+        relation: Model.ManyToManyRelation,
+        modelClass: __dirname + '/user',
+        join: {
+          from: "drafts.id",
+          through: {
+            from: "draft_player_seats.draft_id",
+            to: "draft_player_seats.user_id",
+            extra: ["seat_number"],
+            modelClass: __dirname + '/draft_player_seat'
+          },
+          to: "users.id"
+        }
       }
     };
   }

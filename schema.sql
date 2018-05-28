@@ -57,3 +57,12 @@ CREATE TABLE users (
   hashed_password TEXT,
   CONSTRAINT users_username_unique UNIQUE (username)
 );
+
+CREATE TABLE draft_player_seats (
+  seat_number INTEGER,
+  draft_id INTEGER,
+  user_id INTEGER,
+  FOREIGN KEY(draft_id) REFERENCES drafts(id),
+  FOREIGN KEY(user_id) REFERENCES users(id),
+  PRIMARY KEY(draft_id, seat_number)
+);

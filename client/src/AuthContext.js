@@ -5,6 +5,7 @@ const AuthContext = React.createContext();
 class AuthProvider extends React.Component {
   state = { 
     isAuth: false,
+    user: null
   }
 
   constructor() {
@@ -13,12 +14,12 @@ class AuthProvider extends React.Component {
     this.logout = this.logout.bind(this)
   }
 
-  login() {
-    this.setState({ isAuth: true })
+  login(user) {
+    this.setState({ isAuth: true, user: user })
   }
 
   logout() {
-    this.setState({ isAuth: false })
+    this.setState({ isAuth: false, user: null })
   }
 
   render() {
@@ -26,6 +27,7 @@ class AuthProvider extends React.Component {
       <AuthContext.Provider
         value={{
           isAuth: this.state.isAuth,
+          user: this.state.user,
           login: this.login,
           logout: this.logout
         }}>

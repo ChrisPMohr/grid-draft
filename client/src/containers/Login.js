@@ -45,7 +45,9 @@ export default class Login extends Component {
       throw Error("Login failed");
     }
 
-    authContext.login();
+    const body = await response.json()
+
+    authContext.login(body.user);
     this.props.history.push('/');
   }
 

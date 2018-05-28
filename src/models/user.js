@@ -1,3 +1,5 @@
+var _ = require("underscore");
+
 'use strict';
 
 const Model = require('objection').Model;
@@ -28,6 +30,11 @@ class User extends Model {
   verifyPassword (password, callback) {
     bcrypt.compare(password, this.hashed_password, callback)
   };
+
+
+  mapping () {
+   return _.pick(this, ['username', 'id']);
+  }
 }
 
 module.exports = User;

@@ -1,5 +1,4 @@
 var passport = require('passport')
-var _ = require("underscore");
 
 var User = require('../models/user');
 
@@ -10,7 +9,7 @@ async function createUser(username, password) {
   const user = await User
     .query()
     .insert(original_user);
-  return _.pick(user, ['username', 'id']);
+  return user
 }
 
 function initUser (app) {
@@ -25,7 +24,7 @@ function initUser (app) {
         res.status(400).send({'message': error_message});
       } else {
         createUser(username, password)
-          .then(user => res.send(user))
+          .then(user => res.send(user.mapping()))
           .catch(e => {
             console.log("POST /api/user error: ", e);
             res.status(500).send({});
@@ -33,10 +32,18 @@ function initUser (app) {
       }
   });
 
+  app.get('/api/me',
+    passport.requireLoggedIn(),
+    (req, res) => {
+      res.send({"user": req.user.mapping()});
+  });
+
   app.post('/auth/login',
     passport.authenticate('local'),
     (req, res) => {
-      res.send({"message": "auth succeeded"});
+      res.send({
+        "message": "auth succeeded",
+        "user": req.user.mapping()});
   });
 
   app.post('/auth/logout',

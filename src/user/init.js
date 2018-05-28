@@ -1,21 +1,47 @@
-const passport = require('passport')
+var passport = require('passport')
+var _ = require("underscore");
+
+var User = require('../models/user');
+
+async function createUser(username, password) {
+  const original_user = new User();
+  original_user.username = username;
+  original_user.password = password;
+  const user = await User
+    .query()
+    .insert(original_user);
+  return _.pick(user, ['username', 'id']);
+}
 
 function initUser (app) {
-  app.get('/api/profile',
-    passport.requireLoggedIn(),
-    function (req, res) {
-      res.send({'text': 'logged in profile', 'username': req.user.username});
+  app.post('/api/user',
+    (req, res) => {
+      var username = req.body.username;
+      var password = req.body.password;
+
+      if (!username || !password) {
+        error_message = "'username' and 'password' are required";
+        console.log("POST /api/user error: " + error_message, req.body);
+        res.status(400).send({'message': error_message});
+      } else {
+        createUser(username, password)
+          .then(user => res.send(user))
+          .catch(e => {
+            console.log("POST /api/user error: ", e);
+            res.status(500).send({});
+          });
+      }
   });
 
   app.post('/auth/login',
     passport.authenticate('local'),
-    function (req, res) {
+    (req, res) => {
       res.send({"message": "auth succeeded"});
   });
 
   app.post('/auth/logout',
     passport.requireLoggedIn(),
-    function (req, res) {
+    (req, res) => {
       req.logout();
       res.send({"message": "logout succeeded"});
   });

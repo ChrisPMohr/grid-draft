@@ -54,5 +54,6 @@ CREATE TABLE decklist_cards (
 CREATE TABLE users (
   id INTEGER PRIMARY KEY,
   username TEXT,
-  hashed_password TEXT
+  hashed_password TEXT,
+  CONSTRAINT users_username_unique UNIQUE (username)
 );

@@ -5,7 +5,8 @@ CREATE TABLE cards (
 
 CREATE TABLE drafts (
   id INTEGER PRIMARY KEY,
-  current_player_number INTEGER
+  current_seat_number INTEGER,
+  started BOOLEAN
 );
 
 CREATE TABLE packs (
@@ -19,7 +20,7 @@ CREATE TABLE packs (
 CREATE TABLE decklists (
   id INTEGER PRIMARY KEY,
   draft_id INTEGER,
-  player_number INTEGER,
+  seat_number INTEGER,
   FOREIGN KEY(draft_id) REFERENCES drafts(id)
 );
 

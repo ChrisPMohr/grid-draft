@@ -14,7 +14,7 @@ class Decklist extends Model {
       properties: {
         id: { type: 'integer' },
         draft_id: { type: 'integer' },
-        player_number: { type: 'integer' }
+        seat_number: { type: 'integer' }
       }
     };
   }
@@ -39,6 +39,18 @@ class Decklist extends Model {
             to: "decklist_cards.card_id"
           },
           to: "cards.id"
+        }
+      },
+      user: {
+        relation: Model.HasOneThroughRelation,
+        modelClass: __dirname + '/user',
+        join: {
+          from: ["decklists.draft_id", "decklists.seat_number"],
+          through: {
+            from: ["draft_player_seats.draft_id", "draft_player_seats.seat_number"],
+            to: "draft_player_seats.user_id"
+          },
+          to: "users.id"
         }
       }
     };

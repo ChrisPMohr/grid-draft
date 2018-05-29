@@ -92,24 +92,55 @@ async function createCube() {
   return cubelist;
 }
 
+async function createAndJoinDraft(user) {
+  const draft = await createDraft();
+  const updated_draft = await joinDraft(draft, user);
+  return updated_draft;
+}
+
+async function joinDraft(draft, user) {
+  const playerCount = await draft
+    .$relatedQuery('player')
+    .count()
+    .as('playerCount');
+
+  if (playerCount < 2) {
+    // Right now this only runs with playerCount == 1, but keeping it general
+    await draft
+      .$relatedQuery('player')
+      .relate({user_id: user.id, seat_number: playerCount});
+    if (playerCount == 2) {
+      const updated_draft = await draft
+        .$query()
+        .patchAndFetch({started: true, current_seat_number: 0});
+      return updated_draft;
+    } else {
+      return draft;
+    }
+  } else {
+    throw Error('Draft is full');
+  }
+}
+
 async function createDraft() {
   try {
     const draft = await Draft
       .query()
-      .insert({current_player_number: 0});
+      .insert({started: false, current_seat_number: 0});
     createDecklist(draft, 0);
     createDecklist(draft, 1);
     await createShuffledCube(draft);
+    return draft;
   } catch (e) {
     console.log("Caught error creating cube", e);
     throw e;
   }
 }
 
-async function createDecklist(draft, player_number) {
+async function createDecklist(draft, seat_number) {
   return draft
     .$relatedQuery('decklists')
-    .insert({player_number: player_number});
+    .insert({seat_number: seat_number});
 }
 
 async function createShuffledCube(draft) {
@@ -254,10 +285,10 @@ async function pickCol(col_number) {
 
 async function pickCards(draft, pack_cards, is_first_pick) {
   // If there are cards pick them and add them to the player's decklist
-  current_player_number = draft.current_player_number
+  current_seat_number = draft.current_seat_number
   const decklist = await draft
     .$relatedQuery('decklists')
-    .where({player_number: current_player_number})
+    .where({seat_number: current_seat_number})
     .first();
 
   for (var card of pack_cards) {
@@ -273,10 +304,10 @@ async function pickCards(draft, pack_cards, is_first_pick) {
 
   if (is_first_pick) {
     // If first pick on this pack, flip the current player
-    new_player_number = 1 - current_player_number
+    new_seat_number = 1 - current_seat_number
     await Draft
       .query()
-      .patch({current_player_number: new_player_number})
+      .patch({current_seat_number: new_seat_number})
       .where({id: draft.id});
   } else {
     // Keep player number the same and create a new pack
@@ -292,14 +323,14 @@ async function getCurrentState(draft) {
     cards: pack_cards_json,
     selected_row: pack.selected_row,
     selected_col: pack.selected_col,
-    current_player_number: draft.current_player_number
+    current_seat_number: draft.current_seat_number
   };
 }
 
-async function getDecklistCardJson(draft, player_number) {
+async function getDecklistCardJson(draft, seat_number) {
   const decklist = await draft
     .$relatedQuery('decklists')
-    .where({player_number: player_number})
+    .where({seat_number: seat_number})
     .first();
   const cards = await decklist
     .$relatedQuery('cards');
@@ -323,6 +354,28 @@ async function setUp() {
 
 setUp();
 
+app.post('/api/create_draft',
+  passport.requireLoggedIn(),
+  (req, res) => {
+    createDraft()
+      .then(draft => res.send(draft.mapping()))
+      .catch(e => {
+        console.log("POST /api/create_draft error: ", e);
+        res.send({});
+      });
+});
+
+app.post('/api/join_draft',
+  passport.requireLoggedIn(),
+  (req, res) => {
+    createDraft()
+      .then(draft => res.send(draft.mapping()))
+      .catch(e => {
+        console.log("POST /api/create_draft error: ", e);
+        res.send({});
+      });
+});
+
 app.get('/api/current_pack',
   passport.requireLoggedIn(),
   (req, res) => {
@@ -335,12 +388,12 @@ app.get('/api/current_pack',
       });
 });
 
-app.get('/api/decklist/:player_number',
+app.get('/api/decklist/:seat_number',
   passport.requireLoggedIn(),
   (req, res) => {
-    player_number_int = parseInt(req.params.player_number);
+    seat_number_int = parseInt(req.params.seat_number);
     getCurrentDraft()
-      .then(draft => getDecklistCardJson(draft, player_number_int))
+      .then(draft => getDecklistCardJson(draft, seat_number_int))
       .then(json => res.send(json))
       .catch(e => {
         console.log("GET /api/decklist/<player_num> error: ", e);

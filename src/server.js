@@ -108,9 +108,7 @@ async function joinDraft(draft, user) {
       .relate({id: user.id, seat_number: playerCount});
     if (playerCount == 1) {
       console.log("Starting draft");
-      const updated_draft = await draft
-        .$query()
-        .patchAndFetch({started: true, current_seat_number: 0});
+      const updated_draft = await startDraft(draft);
       return updated_draft;
     } else {
       return draft;
@@ -124,15 +122,22 @@ async function createDraft() {
   try {
     const draft = await Draft
       .query()
-      .insert({started: false, current_seat_number: 0});
-    createDecklist(draft, 0);
-    createDecklist(draft, 1);
-    await createShuffledCube(draft);
+      .insert({started: false});
     return draft;
   } catch (e) {
     console.log("Caught error creating cube", e);
     throw e;
   }
+}
+
+async function startDraft(draft) {
+  await createDecklist(draft, 0);
+  await createDecklist(draft, 1);
+  await createShuffledCube(draft);
+  const updated_draft = await draft
+    .$query()
+    .patchAndFetch({started: true, current_seat_number: 0});
+  return updated_draft
 }
 
 async function createDecklist(draft, seat_number) {

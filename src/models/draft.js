@@ -1,3 +1,5 @@
+var _ = require("underscore");
+
 'use strict';
 
 const Model = require('objection').Model;
@@ -65,6 +67,23 @@ class Draft extends Model {
         }
       }
     };
+  }
+
+  async getPlayerCount() {
+    const response = await this
+      .$relatedQuery('players')
+      .count('* as playerCount');
+    return response[0].playerCount;
+  }
+
+  mapping () {
+   return _.pick(this, ['id', 'current_seat_number']);
+  }
+
+  async computedMapping() {
+    const mapping = this.mapping();
+    mapping.playerCount = await this.getPlayerCount();
+    return mapping;
   }
 }
 

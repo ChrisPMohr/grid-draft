@@ -99,16 +99,13 @@ async function createAndJoinDraft(user) {
 }
 
 async function joinDraft(draft, user) {
-  const playerCount = await draft
-    .$relatedQuery('player')
-    .count()
-    .as('playerCount');
+  const playerCount = await draft.getPlayerCount();
 
   if (playerCount < 2) {
     // Right now this only runs with playerCount == 1, but keeping it general
     await draft
-      .$relatedQuery('player')
-      .relate({user_id: user.id, seat_number: playerCount});
+      .$relatedQuery('players')
+      .relate({id: user.id, seat_number: playerCount});
     if (playerCount == 2) {
       const updated_draft = await draft
         .$query()
@@ -354,24 +351,37 @@ async function setUp() {
 
 setUp();
 
-app.post('/api/create_draft',
-  passport.requireLoggedIn(),
+app.get('/api/current_draft',
   (req, res) => {
-    createDraft()
-      .then(draft => res.send(draft.mapping()))
+    getCurrentDraft()
+      .then(draft => draft.computedMapping())
+      .then(mapping => res.send(mapping))
       .catch(e => {
-        console.log("POST /api/create_draft error: ", e);
+        console.log("GET /api/current_draft error: ", e);
         res.send({});
       });
 });
 
-app.post('/api/join_draft',
+app.post('/api/draft',
   passport.requireLoggedIn(),
   (req, res) => {
-    createDraft()
+    createAndJoinDraft(req.user)
+      .then(draft => draft.computedMapping())
+      .then(mapping => res.send(mapping))
+      .catch(e => {
+        console.log("POST /api/draft error: ", e);
+        res.send({});
+      });
+});
+
+app.post('/api/join_current_draft',
+  passport.requireLoggedIn(),
+  (req, res) => {
+    getCurrentDraft()
+      .then(draft => joinDraft(draft, req.user))
       .then(draft => res.send(draft.mapping()))
       .catch(e => {
-        console.log("POST /api/create_draft error: ", e);
+        console.log("POST /api/join_current_draft error: ", e);
         res.send({});
       });
 });

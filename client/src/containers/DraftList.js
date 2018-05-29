@@ -28,6 +28,18 @@ class DraftListItem extends Component {
         <div>
           Draft {this.props.draft.id}
         </div>
+        {this.props.draft.started ? (
+          <div>
+            Started
+          </div>
+        ) : (
+          <div>
+            Waiting for players
+          </div>
+        )}
+        <div>
+          Players - {this.props.draft.playerCount} / 2
+        </div>
         {this.props.authContext.isAuth && (
           <div>
             <button onClick={this.joinDraft}>

@@ -121,7 +121,7 @@ class ColumnButtons extends Component {
   }
 }
 
-export default class Draft extends Component {
+class ActiveDraft extends Component {
   constructor(props) {
     super(props);
     this.getCurrentPack = this.getCurrentPack.bind(this);
@@ -133,38 +133,32 @@ export default class Draft extends Component {
     selectedRow: null
   };
 
-  componentDidMount() {
-    this.getCurrentPack();
+  async componentDidMount() {
+    await this.getCurrentPack();
   }
 
-  getCurrentPack() {
-    this.getCurrentPackApi()
-      .then(res => {
-        this.setState({
-          cards: res.cards,
-          selectedCol: res.selected_col,
-          selectedRow: res.selected_row
-        })
-      })
-      .catch(err => console.log(err));
-  }
-
-  getCurrentPackApi = async () => {
+  getCurrentPack = async () => {
     const response = await fetch('/api/current_pack', {
       credentials: 'same-origin',
     });
     const body = await response.json();
 
-    if (response.status !== 200) throw Error(body.message);
+    if (response.status !== 200) {
+      console.log(body.message);
+      throw Error(body.message);
+    }
 
-    return body;
+    this.setState({
+      cards: body.cards,
+      selectedCol: body.selected_col,
+      selectedRow: body.selected_row
+    })
   };
-
 
   render() {
     return (
       <div className="DraftContainer">
-        { this.state.cards != null &&
+        { this.state.cards &&
           <div className="draft">
             <ColumnButtons
               size={this.state.cards.length}
@@ -179,6 +173,53 @@ export default class Draft extends Component {
                 getCurrentPack={this.getCurrentPack} />)}
           </div>
         }
+      </div>
+    );
+  }
+}
+
+export default class Draft extends Component {
+  state = {
+    draft: null,
+  };
+
+  async componentDidMount() {
+    await this.getCurrentDraft();
+  }
+
+  getCurrentDraft = async () => {
+    const response = await fetch('/api/current_draft', {
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json'
+      },
+      credentials: 'same-origin'
+    });
+
+    if (response.status !== 200) {
+      const error_body = await response.text();
+      console.log("Get current draft failed: ", error_body);
+      throw Error("Get current draft failed");
+    }
+
+    const body = await response.json()
+    this.setState({draft: body});
+  }
+
+  render() {
+    if (!this.state.draft) {
+      return (
+        <div>Can't find draft. Go home?</div>
+      )
+    }
+
+    return (
+      <div className="DraftContainer">
+        { this.state.draft.started ? (
+          <ActiveDraft />
+        ) : (
+          <div>Waiting for draft to start</div>
+        )}
       </div>
     );
   }

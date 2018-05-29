@@ -106,7 +106,8 @@ async function joinDraft(draft, user) {
     await draft
       .$relatedQuery('players')
       .relate({id: user.id, seat_number: playerCount});
-    if (playerCount == 2) {
+    if (playerCount == 1) {
+      console.log("Starting draft");
       const updated_draft = await draft
         .$query()
         .patchAndFetch({started: true, current_seat_number: 0});

@@ -15,7 +15,8 @@ class Draft extends Model {
 
       properties: {
         id: { type: 'integer' },
-        current_seat_number: { type: 'integer' }
+        current_seat_number: { type: 'integer' },
+        started: { type: 'boolean' }
       }
     };
   }
@@ -77,7 +78,7 @@ class Draft extends Model {
   }
 
   mapping () {
-   return _.pick(this, ['id', 'current_seat_number']);
+   return _.pick(this, ['id', 'current_seat_number', 'started']);
   }
 
   async computedMapping() {

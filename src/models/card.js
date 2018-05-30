@@ -18,6 +18,10 @@ class Card extends Model {
       }
     };
   }
+
+  get image_url() {
+    return "/images/" + this.name;
+  }
 }
 
 module.exports = Card;

@@ -3,7 +3,7 @@ var fs  = require("fs");
 
 var Knex = require('knex');
 var knexConfig = require('./knexfile');
-var { raw, Model } = require('objection');
+var { raw, transaction, Model } = require('objection');
 var sqlite3 = require('sqlite3').verbose()
 
 var express = require('express');
@@ -16,6 +16,7 @@ var Card = require('./models/card');
 var Draft = require('./models/draft');
 var Pack = require('./models/pack');
 var Decklist = require('./models/decklist');
+var User = require('./models/user');
 
 var ShuffledCubeCard = require('./models/shuffled_cube_card');
 var PackCard = require('./models/pack_card');
@@ -167,23 +168,23 @@ async function createShuffledCube(draft) {
   }
 }
 
-async function createPack(draft) {
+async function createPack(draft, trx) {
   const pack = await draft
-    .$relatedQuery('packs')
+    .$relatedQuery('packs', trx)
     .insert({});
 
   const shuffled_cards = await draft
-    .$relatedQuery('shuffled_cards')
+    .$relatedQuery('shuffled_cards', trx)
     .orderBy('position')
     .limit(9);
   for (i = 0; i < shuffled_cards.length; i++) {
     const card = shuffled_cards[i];
     await draft
-      .$relatedQuery('shuffled_cards')
+      .$relatedQuery('shuffled_cards', trx)
       .unrelate()
       .where('id', card.id)
     const new_card = await pack
-      .$relatedQuery('cards')
+      .$relatedQuery('cards', trx)
       .relate(
         {
           id: card.id,
@@ -206,16 +207,107 @@ async function getCurrentDraft() { try {
   }
 }
 
-async function getCurrentPack(draft) {
+async function getCurrentPack(draft, trx) {
   try {
     return await draft
-      .$relatedQuery('packs')
+      .$relatedQuery('packs', trx)
       .orderBy('id', 'desc')
       .limit(1)
       .first();
   } catch (e) {
     console.log("No current pack");
   }
+}
+
+function isFirstPick(pack) {
+  return pack.selected_row == null && pack.selected_col == null;
+}
+
+async function pickCards(row, col, user) {
+  if (row) {
+    row_number = row - 1;
+  } else {
+    col_number = col - 1;
+  }
+  const draft = await getCurrentDraft();
+  const knex = Draft.knex();
+
+  await transaction(knex, async (trx) => {
+    const current_seat_number = draft.current_seat_number;
+    const current_player = await draft
+      .$relatedQuery('players', trx)
+      .where({seat_number: current_seat_number})
+      .first();
+
+    if (current_player.id !== user.id) {
+      throw Error("Trying to pick cards for another player");
+    }
+
+    // get decklist for user + draft
+    const decklist = await draft
+      .$relatedQuery('decklists', trx)
+      .where({seat_number: current_seat_number})
+      .first();
+
+    // get pack
+    const pack = await getCurrentPack(draft, trx);
+
+    // get selected cards
+    var cards;
+    if (row) {
+      if (pack.selected_row === row_number) {
+        throw Error("Row was already selected");
+      }
+      cards = await pack
+        .$relatedQuery('cards', trx)
+        .where({row: row_number, selected: false});
+    } else {
+      if (pack.selected_col === col_number) {
+        throw Error("Column was already selected");
+      }
+      cards = await pack
+        .$relatedQuery('cards', trx)
+        .where({col: col_number, selected: false});
+    }
+
+    // add cards into decklist
+    for (var card of cards) {
+      await PackCard
+        .query(trx)
+        .patch({selected: true})
+        .where({card_id: card.id});
+
+      await decklist
+        .$relatedQuery('cards', trx)
+        .relate({id: card.id});
+    }
+
+    // update turn in draft
+    const is_first_pick = isFirstPick(pack);
+    if (is_first_pick) {
+      // If first pick on this pack, flip the current player
+      const new_seat_number = 1 - current_seat_number
+      await draft
+        .$query(trx)
+        .patch({current_seat_number: new_seat_number});
+    } else {
+      // Keep player number the same and create a new pack
+      await createPack(draft, trx);
+    }
+
+    // update pack (mark as selected or make new pack)
+    if (is_first_pick) {
+      if (row) {
+        await pack
+          .$query(trx)
+          .patch({selected_row: row_number});
+      } else {
+        await pack
+          .$query(trx)
+          .patch({selected_col: col_number});
+      }
+    }
+  });
 }
 
 async function getPackCardsJson(pack) {
@@ -230,92 +322,6 @@ async function getPackCardsJson(pack) {
         url: image_url(card.name)
       })
     ), 3);
-}
-
-function isFirstPick(pack) {
-  return pack.selected_row == null && pack.selected_col == null;
-}
-
-async function pickRow(row_number) {
-  const draft = await getCurrentDraft();
-  const pack = await getCurrentPack(draft);
-
-  const is_first_pick = isFirstPick(pack);
-
-  if (pack.selected_row === row_number) {
-    throw "Row was already selected";
-  }
-
-  const row_cards = await pack
-    .$relatedQuery('cards')
-    .where('row', '=', row_number)
-    .where('selected', '=', false);
-
-  await pickCards(draft, row_cards, is_first_pick);
-
-  if (is_first_pick) {
-    await Pack
-      .query()
-      .patch({selected_row: row_number})
-      .where({id: pack.id});
-  }
-}
-
-async function pickCol(col_number) {
-  const draft = await getCurrentDraft();
-  const pack = await getCurrentPack(draft);
-
-  const is_first_pick = isFirstPick(pack);
-
-  if (pack.selected_col === col_number) {
-    throw "Column was already selected";
-  }
-
-  const col_cards = await pack
-    .$relatedQuery('cards')
-    .where('col', '=', col_number)
-    .where('selected', '=', false);
-
-  await pickCards(draft, col_cards, is_first_pick);
-
-  if (is_first_pick) {
-    await Pack
-      .query()
-      .patch({selected_col: col_number})
-      .where({id: pack.id});
-  }
-}
-
-async function pickCards(draft, pack_cards, is_first_pick) {
-  // If there are cards pick them and add them to the player's decklist
-  current_seat_number = draft.current_seat_number
-  const decklist = await draft
-    .$relatedQuery('decklists')
-    .where({seat_number: current_seat_number})
-    .first();
-
-  for (var card of pack_cards) {
-    await PackCard
-      .query()
-      .patch({selected: true})
-      .where({card_id: card.id});
-
-    await decklist
-      .$relatedQuery('cards')
-      .relate({id: card.id});
-  }
-
-  if (is_first_pick) {
-    // If first pick on this pack, flip the current player
-    new_seat_number = 1 - current_seat_number
-    await Draft
-      .query()
-      .patch({current_seat_number: new_seat_number})
-      .where({id: draft.id});
-  } else {
-    // Keep player number the same and create a new pack
-    await createPack(draft);
-  }
 }
 
 async function getCurrentState(draft) {
@@ -348,7 +354,17 @@ async function getDecklistCardJson(draft, seat_number) {
 async function setUp() {
   try {
     await cleanupDb();
-    await createDraft();
+    const draft = await createDraft();
+    const user = await User
+      .query()
+      .where({username: 'user'})
+      .first();
+    await joinDraft(draft, user);
+    const user2 = await User
+      .query()
+      .where({username: 'user2'})
+      .first();
+    await joinDraft(draft, user2);
     console.log("Finished setup");
   } catch (e) {
     console.log("Error while setting up the server", e);
@@ -424,15 +440,8 @@ app.post('/api/pick_cards',
     var row = req.body.row;
     var col = req.body.col;
 
-    if (row) {
-      pickRow(row - 1)
-        .then(result => res.send({}))
-        .catch(e => {
-          console.log("POST /api/pick_cards error: ", e);
-          res.send({});
-        });
-    } else if (col) {
-      pickCol(col - 1)
+    if (row || col) {
+      pickCards(row, col, req.user)
         .then(result => res.send({}))
         .catch(e => {
           console.log("POST /api/pick_cards error: ", e);

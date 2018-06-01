@@ -16,11 +16,6 @@ class Card extends Component {
 }
 
 class RowButton extends Component {
-  constructor(props) {
-    super(props);
-    this.handleClick = this.handleClick.bind(this);
-  }
-
   handleClick = async () => {
     const response = await fetch('/api/pick_cards', {
       headers: {
@@ -35,7 +30,7 @@ class RowButton extends Component {
 
     if (response.status !== 200) throw Error(body.message);
 
-    await this.props.getCurrentPack();
+    await this.props.updateDraft();
 
     return body;
   };
@@ -50,11 +45,6 @@ class RowButton extends Component {
 }
 
 class ColumnButton extends Component {
-  constructor(props) {
-    super(props);
-    this.handleClick = this.handleClick.bind(this);
-  }
-
   handleClick = async () => {
     const response = await fetch('/api/pick_cards', {
       headers: {
@@ -69,7 +59,7 @@ class ColumnButton extends Component {
 
     if (response.status !== 200) throw Error(body.message);
 
-    await this.props.getCurrentPack();
+    await this.props.updateDraft();
 
     return body;
   };
@@ -90,7 +80,7 @@ class CardRow extends Component {
         <RowButton
           row_number={this.props.row_number}
           selected={this.props.selected}
-          getCurrentPack={this.props.getCurrentPack} />
+          updateDraft={this.props.updateDraft} />
         {this.props.data.map((card_data) =>
           <Card key={card_data.name} data={card_data} />)}
       </div>
@@ -101,16 +91,15 @@ class CardRow extends Component {
 class ColumnButtons extends Component {
   render() {
     var buttons = [];
-      for (var i=0; i < this.props.size; i++){
-        buttons.push(
-          (<ColumnButton
-             key={i}
-             column_number={i + 1}
-             selected={this.props.selectedCol === i}
-             getCurrentPack={this.props.getCurrentPack} />)
-        );
-      }
-
+    for (var i=0; i < this.props.size; i++) {
+      buttons.push(
+        (<ColumnButton
+           key={i}
+           column_number={i + 1}
+           selected={this.props.selectedCol === i}
+           updateDraft={this.props.updateDraft} />)
+      );
+    }
 
     return (
       <div className="col-button-row">
@@ -121,20 +110,50 @@ class ColumnButtons extends Component {
   }
 }
 
-class ActiveDraft extends Component {
-  constructor(props) {
-    super(props);
-    this.getCurrentPack = this.getCurrentPack.bind(this);
-  }
+class Decklist extends Component {
+  render() {
+    var cards = [];
+    for (var i=0; this.props.decklist && i < this.props.decklist.length; i++) {
+      cards.push(
+        (<DecklistItem
+           key={i}
+           card={this.props.decklist[i]} />)
+      );
+    }
 
+
+    return (
+      <div className="Decklist">
+        <h1>Decklist</h1>
+        {cards}
+      </div>
+    );
+  }
+}
+
+class DecklistItem extends Component {
+  render() {
+    return (
+      <div>{this.props.card.name}</div>
+    );
+  }
+}
+
+class ActiveDraft extends Component {
   state = {
     cards: null,
+    decklist: null,
     selectedCol: null,
     selectedRow: null
   };
 
   async componentDidMount() {
+    await this.updateDraft();
+  }
+
+  updateDraft = async () => {
     await this.getCurrentPack();
+    await this.updateDecklist();
   }
 
   getCurrentPack = async () => {
@@ -155,28 +174,41 @@ class ActiveDraft extends Component {
     })
   };
 
+  updateDecklist = async () => {
+    const response = await fetch('/api/current_draft/seat/' + this.props.seat + '/decklist', {
+      credentials: 'same-origin',
+    });
+    const body = await response.json();
+
+    if (response.status !== 200) {
+      console.log(body.message);
+      throw Error(body.message);
+    }
+
+    this.setState({
+      decklist: body
+    });
+  };
+
   render() {
     return (
       <div className="DraftContainer">
+        <Decklist decklist={this.state.decklist}/>
         { this.state.cards &&
           <div className="draft">
             <ColumnButtons
               size={this.state.cards.length}
               selectedCol={this.state.selectedCol}
-              getCurrentPack={this.getCurrentPack} />
+              updateDraft={this.updateDraft} />
             {this.state.cards.map((row_data, i) =>
               <CardRow
                 key={i}
                 data={row_data}
                 row_number={i + 1}
                 selected={this.state.selectedRow === i}
-                getCurrentPack={this.getCurrentPack} />)}
+                updateDraft={this.updateDraft} />)}
           </div>
         }
-        <div className="Decklist">
-          <div>Black Lotus</div>
-          <div>Storm Crow</div>
-        </div>
       </div>
     );
   }
@@ -185,11 +217,9 @@ class ActiveDraft extends Component {
 export default class Draft extends Component {
   state = {
     draft: null,
-    seat: null
   };
 
   async componentDidMount() {
-    this.setState({seat: this.props.match.params.seat});
     await this.getCurrentDraft();
   }
 
@@ -220,7 +250,7 @@ export default class Draft extends Component {
     }
 
     if (this.state.draft.started) {
-      return (<ActiveDraft />);
+      return (<ActiveDraft seat={this.props.match.params.seat}/>);
     } else {
       return (<div>Waiting for draft to start</div>);
     }

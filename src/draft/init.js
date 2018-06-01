@@ -31,24 +31,24 @@ async function setUpDraft() {
 
 async function createAndJoinDraft(user) {
   const draft = await createDraft();
-  const updated_draft = await joinDraft(draft, user);
-  return updated_draft;
+  const updated_draft_and_seat_number = await joinDraft(draft, user);
+  return updated_draft_and_seat_number;
 }
 
 async function joinDraft(draft, user) {
   const playerCount = await draft.getPlayerCount();
+  const seatNumber = playerCount;
 
   if (playerCount < 2) {
-    // Right now this only runs with playerCount == 1, but keeping it general
     await draft
       .$relatedQuery('players')
-      .relate({id: user.id, seat_number: playerCount});
+      .relate({id: user.id, seat_number: seatNumber});
     if (playerCount == 1) {
       console.log("Starting draft");
       const updated_draft = await startDraft(draft);
-      return updated_draft;
+      return [updated_draft, seatNumber];
     } else {
-      return draft;
+      return [draft, seatNumber];
     }
   } else {
     throw Error('Draft is full');
@@ -311,8 +311,17 @@ function initDraft(app) {
     passport.requireLoggedIn(),
     (req, res) => {
       createAndJoinDraft(req.user)
-        .then(draft => draft.computedMapping())
-        .then(mapping => res.send(mapping))
+        .then(draft_and_seat_number => {
+          return [
+            draft_and_seat_number[0].computedMapping(),
+            draft_and_seat_number[1]];
+        })
+        .then(draft_mapping_and_seat_number => {
+          res.send({
+            'draft': draft_mapping_and_seat_number[0],
+            'seat': draft_mapping_and_seat_number[1]
+          });
+        })
         .catch(e => {
           console.log("POST /api/draft error: ", e);
           res.status(500).send({"message": e.message});
@@ -324,7 +333,17 @@ function initDraft(app) {
     (req, res) => {
       getCurrentDraft()
         .then(draft => joinDraft(draft, req.user))
-        .then(draft => res.send(draft.mapping()))
+        .then(draft_and_seat_number => {
+          return [
+            draft_and_seat_number[0].computedMapping(),
+            draft_and_seat_number[1]];
+        })
+        .then(draft_mapping_and_seat_number => {
+          res.send({
+            'draft': draft_mapping_and_seat_number[0],
+            'seat': draft_mapping_and_seat_number[1]
+          });
+        })
         .catch(e => {
           console.log("POST /api/join_current_draft error: ", e);
           res.status(500).send({"message": e.message});
@@ -343,15 +362,15 @@ function initDraft(app) {
         });
   });
   
-  app.get('/api/current_draft/seat_number/:seat_number/decklist',
+  app.get('/api/current_draft/seat/:seat/decklist',
     passport.requireLoggedIn(),
     (req, res) => {
-      seat_number_int = parseInt(req.params.seat_number);
+      seat_int = parseInt(req.params.seat);
       getCurrentDraft()
-        .then(draft => getDecklistCardJson(draft, seat_number_int, req.user))
+        .then(draft => getDecklistCardJson(draft, seat_int, req.user))
         .then(json => res.send(json))
         .catch(e => {
-          console.log("GET /api/current_draft/seat_number/:seat_number/decklist error: ", e);
+          console.log("GET /api/current_draft/seat/:seat/decklist error: ", e);
           res.status(500).send({"message": e.message});
         });
   });

@@ -1,3 +1,13 @@
+.DraftContainer {
+  position: relative;
+}
+
+.Decklist {
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
 .card-row {
   height: 200px;
   width: 650px;

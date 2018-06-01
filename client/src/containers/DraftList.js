@@ -19,7 +19,10 @@ class DraftListItem extends Component {
       throw Error("Join draft failed");
     }
 
-    this.props.history.push('/draft');
+    const body = await response.json();
+    const seat = body.seat;
+
+    this.props.history.push('/draft/seat/' + seat);
   }
 
   render() {
@@ -96,8 +99,10 @@ export default class DraftList extends Component {
     }
 
     const body = await response.json()
+    const seat = body.seat;
+
     this.setState({currentDraft: body});
-    this.props.history.push('/draft');
+    this.props.history.push('/draft/seat/' + seat);
   }
 
   render() {

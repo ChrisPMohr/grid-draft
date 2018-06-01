@@ -9,7 +9,7 @@ import NotFound from "./containers/NotFound";
 export default () =>
   <Switch>
     <Route path="/" exact component={DraftList} />
-    <Route path="/draft" exact component={Draft} />
+    <Route path="/draft/seat/:seat" component={Draft} />
     <Route path="/login" exact component={Login} />
     <Route path="/signup" exact component={Signup} />
     <Route component={NotFound} />

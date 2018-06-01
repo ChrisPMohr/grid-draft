@@ -173,6 +173,10 @@ class ActiveDraft extends Component {
                 getCurrentPack={this.getCurrentPack} />)}
           </div>
         }
+        <div className="Decklist">
+          <div>Black Lotus</div>
+          <div>Storm Crow</div>
+        </div>
       </div>
     );
   }
@@ -181,9 +185,11 @@ class ActiveDraft extends Component {
 export default class Draft extends Component {
   state = {
     draft: null,
+    seat: null
   };
 
   async componentDidMount() {
+    this.setState({seat: this.props.match.params.seat});
     await this.getCurrentDraft();
   }
 
@@ -213,14 +219,10 @@ export default class Draft extends Component {
       )
     }
 
-    return (
-      <div className="DraftContainer">
-        { this.state.draft.started ? (
-          <ActiveDraft />
-        ) : (
-          <div>Waiting for draft to start</div>
-        )}
-      </div>
-    );
+    if (this.state.draft.started) {
+      return (<ActiveDraft />);
+    } else {
+      return (<div>Waiting for draft to start</div>);
+    }
   }
 }

@@ -272,11 +272,19 @@ async function getCurrentState(draft) {
   };
 }
 
-async function getDecklistCardJson(draft, seat_number) {
+async function getDecklistCardJson(draft, seat_number, user) {
   const decklist = await draft
     .$relatedQuery('decklists')
     .where({seat_number: seat_number})
     .first();
+  if (! decklist) {
+    throw Error("Can't find decklist");
+  }
+  const decklist_user = await decklist
+    .$relatedQuery('user');
+  if (decklist_user.id !== user.id) {
+    throw Error("Trying to view decklist for another player");
+  }
   const cards = await decklist
     .$relatedQuery('cards');
   return cards.map((card) => (
@@ -295,7 +303,7 @@ function initDraft(app) {
         .then(mapping => res.send(mapping))
         .catch(e => {
           console.log("GET /api/current_draft error: ", e);
-          res.send({});
+          res.status(500).send({"message": e.message});
         });
   });
   
@@ -307,7 +315,7 @@ function initDraft(app) {
         .then(mapping => res.send(mapping))
         .catch(e => {
           console.log("POST /api/draft error: ", e);
-          res.send({});
+          res.status(500).send({"message": e.message});
         });
   });
   
@@ -319,7 +327,7 @@ function initDraft(app) {
         .then(draft => res.send(draft.mapping()))
         .catch(e => {
           console.log("POST /api/join_current_draft error: ", e);
-          res.send({});
+          res.status(500).send({"message": e.message});
         });
   });
   
@@ -331,20 +339,20 @@ function initDraft(app) {
         .then(json => res.send(json))
         .catch(e => {
           console.log("GET /api/current_pack error: ", e);
-          res.send({});
+          res.status(500).send({"message": e.message});
         });
   });
   
-  app.get('/api/decklist/:seat_number',
+  app.get('/api/current_draft/seat_number/:seat_number/decklist',
     passport.requireLoggedIn(),
     (req, res) => {
       seat_number_int = parseInt(req.params.seat_number);
       getCurrentDraft()
-        .then(draft => getDecklistCardJson(draft, seat_number_int))
+        .then(draft => getDecklistCardJson(draft, seat_number_int, req.user))
         .then(json => res.send(json))
         .catch(e => {
-          console.log("GET /api/decklist/<player_num> error: ", e);
-          res.send({});
+          console.log("GET /api/current_draft/seat_number/:seat_number/decklist error: ", e);
+          res.status(500).send({"message": e.message});
         });
   });
   
@@ -359,7 +367,7 @@ function initDraft(app) {
           .then(result => res.send({}))
           .catch(e => {
             console.log("POST /api/pick_cards error: ", e);
-            res.send({});
+            res.status(500).send({"message": e.message});
           });
       } else {
         console.log("POST /api/pick_cards error: 'row' or 'col is required:", req.body);

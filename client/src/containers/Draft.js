@@ -149,6 +149,16 @@ class ActiveDraft extends Component {
 
   async componentDidMount() {
     await this.updateDraft();
+    this.connection = new WebSocket('ws://localhost:8080');
+    console.log("Created websocket connection");
+    this.connection.onopen = (event) => {
+      this.connection.send(this.props.seat);
+      console.log("Sent websocket message");
+    }
+    this.connection.onmessage = (event) => {
+      console.log("Got refresh message");
+      this.getCurrentPack();
+    }
   }
 
   updateDraft = async () => {

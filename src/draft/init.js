@@ -159,7 +159,7 @@ function isFirstPick(pack) {
   return pack.selected_row == null && pack.selected_col == null;
 }
 
-async function pickCards(row, col, user) {
+async function pickCards(row, col, user, refreshClient) {
   if (row) {
     row_number = row - 1;
   } else {
@@ -220,15 +220,17 @@ async function pickCards(row, col, user) {
 
     // update turn in draft
     const is_first_pick = isFirstPick(pack);
+    const other_seat_number = 1 - current_seat_number
     if (is_first_pick) {
       // If first pick on this pack, flip the current player
-      const new_seat_number = 1 - current_seat_number
       await draft
         .$query(trx)
-        .patch({current_seat_number: new_seat_number});
+        .patch({current_seat_number: other_seat_number});
+      refreshClient(other_seat_number);
     } else {
       // Keep player number the same and create a new pack
       await createPack(draft, trx);
+      refreshClient(other_seat_number);
     }
 
     // update pack (mark as selected or make new pack)
@@ -295,7 +297,7 @@ async function getDecklistCardJson(draft, seat_number, user) {
   );
 }
 
-function initDraft(app) {
+function initDraft(app, refreshClient) {
   app.get('/api/current_draft',
     (req, res) => {
       getCurrentDraft()
@@ -382,7 +384,7 @@ function initDraft(app) {
       var col = req.body.col;
   
       if (row || col) {
-        pickCards(row, col, req.user)
+        pickCards(row, col, req.user, refreshClient)
           .then(result => res.send({}))
           .catch(e => {
             console.log("POST /api/pick_cards error: ", e);

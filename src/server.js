@@ -10,6 +10,7 @@ var bodyParser = require('body-parser')
 var passport = require('passport')
 var session = require('express-session')
 var RedisStore = require('connect-redis')(session)
+var WebSocket = require('ws');
 
 var Card = require('./models/card');
 var Draft = require('./models/draft');
@@ -56,6 +57,24 @@ app.use(session({
 app.use(passport.initialize())
 app.use(passport.session())
 
+const wss = new WebSocket.Server({ port: 8080 });
+var connections = {};
+
+// Broadcast to all.
+function refreshClient(seat_number) {
+  var client = connections[seat_number]
+  if (client && client.readyState === WebSocket.OPEN) {
+    client.send("Refresh");
+  }
+};
+
+wss.on('connection', function connection(ws) {
+  ws.on('message', function incoming(data) {
+    // Broadcast to everyone else.
+    connections[data] = ws;
+  });
+});
+
 async function cleanupDb() {
   await Draft.query().delete();
   await Pack.query().delete();
@@ -100,6 +119,6 @@ async function setUp() {
 setUp();
 
 require('./user').init(app)
-require('./draft').init(app)
+require('./draft').init(app, refreshClient)
 
 app.listen(port, () => console.log(`Listening on port ${port}`));

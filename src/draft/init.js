@@ -13,16 +13,16 @@ var PackCard = require('../models/pack_card');
 async function setUpDraft() {
   try {
     const draft = await createDraft();
-    const user = await User
-      .query()
-      .where({username: 'user'})
-      .first();
-    await joinDraft(draft, user);
-    const user2 = await User
-      .query()
-      .where({username: 'user2'})
-      .first();
-    await joinDraft(draft, user2);
+    //const user = await User
+    //  .query()
+    //  .where({username: 'user'})
+    //  .first();
+    //await joinDraft(draft, user);
+    //const user2 = await User
+    //  .query()
+    //  .where({username: 'user2'})
+    //  .first();
+    //await joinDraft(draft, user2);
     console.log("Finished draft setup");
   } catch (e) {
     console.log("Error while setting up the server", e);
@@ -265,12 +265,18 @@ async function getPackCardsJson(pack) {
 async function getCurrentState(draft) {
   const pack = await getCurrentPack(draft);
   const pack_cards_json = await getPackCardsJson(pack);
+  const pack_num_response = await draft.$relatedQuery('packs').count();
+  console.log(pack_num_response);
+  const pack_num = pack_num_response[0]['count(*)'];
+  console.log(pack_num);
 
   return {
     cards: pack_cards_json,
     selected_row: pack.selected_row,
     selected_col: pack.selected_col,
-    current_seat_number: draft.current_seat_number
+    current_seat_number: draft.current_seat_number,
+    new_field: 4,
+    pack_number: pack_num
   };
 }
 

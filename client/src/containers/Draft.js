@@ -144,12 +144,13 @@ class ActiveDraft extends Component {
     cards: null,
     decklist: null,
     selectedCol: null,
-    selectedRow: null
+    selectedRow: null,
+    pack_number: null
   };
 
   async componentDidMount() {
     await this.updateDraft();
-    this.connection = new WebSocket('ws://localhost:8080');
+    this.connection = new WebSocket('ws://35.237.131.111:8080');
     console.log("Created websocket connection");
     this.connection.onopen = (event) => {
       this.connection.send(this.props.seat);
@@ -178,6 +179,7 @@ class ActiveDraft extends Component {
     }
 
     this.setState({
+      pack_number: body.pack_number,
       cards: body.cards,
       selectedCol: body.selected_col,
       selectedRow: body.selected_row
@@ -203,6 +205,7 @@ class ActiveDraft extends Component {
   render() {
     return (
       <div className="DraftContainer">
+        <p>Pack Number {this.state.pack_number}</p>
         <Decklist decklist={this.state.decklist}/>
         { this.state.cards &&
           <div className="draft">

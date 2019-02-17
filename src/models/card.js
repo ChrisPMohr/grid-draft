@@ -20,7 +20,7 @@ class Card extends Model {
   }
 
   get image_url() {
-    return "/images/" + this.name;
+    return "/images/" + this.name.replace(" // ", "");
   }
 }
 

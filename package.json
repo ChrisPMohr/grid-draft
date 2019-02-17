@@ -3,8 +3,12 @@
   "version": "1.0.0",
   "scripts": {
     "client": "cd client && yarn start",
-    "server": "REDIS_STORE_URI=redis://localhost REDIS_STORE_SECRET=session_secret nodemon src/server.js",
-    "dev": "concurrently --kill-others-on-fail \"yarn server\" \"yarn client\""
+    "server": "REDIS_STORE_URI=redis://localhost REDIS_STORE_SECRET=session_secret nodemon start src/server.js",
+    "dev": "concurrently --kill-others-on-fail \"yarn server\" \"yarn client\"",
+    "server-prod": "REDIS_STORE_URI=redis://localhost REDIS_STORE_SECRET=session_secret pm2 start src/server.js",
+    "client-prod": "cd client && yarn start-prod",
+    "prod": "concurrently --kill-others-on-fail \"yarn server-prod\" \"yarn client-prod\"",
+    "server-stop": "pm2 stop all"
   },
   "dependencies": {
     "bcrypt": "2.0.1",

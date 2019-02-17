@@ -31,7 +31,6 @@ const app = express();
 const port = process.env.PORT || 5000;
 
 app.use(express.json());
-app.use(express.static('public'))
 
 app.use(bodyParser.json())
 
@@ -110,6 +109,8 @@ async function createCube() {
 async function setUp() {
   try {
     await cleanupDb();
+    await cleanupCube();
+    await createCube();
     await require('./draft').setUp()
   } catch (e) {
     console.log("Error while setting up the server", e);

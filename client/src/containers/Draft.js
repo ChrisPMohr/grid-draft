@@ -115,7 +115,7 @@ class Decklist extends Component {
     var cards = [];
     for (var i=0; this.props.decklist && i < this.props.decklist.length; i++) {
       cards.push(
-        (<DecklistItem
+        (<CardListItem
            key={i}
            card={this.props.decklist[i]} />)
       );
@@ -131,10 +131,31 @@ class Decklist extends Component {
   }
 }
 
-class DecklistItem extends Component {
+class CardListItem extends Component {
   render() {
     return (
       <div>{this.props.card.name}</div>
+    );
+  }
+}
+
+class OpponentLastPicks extends Component {
+  render() {
+    var cards = [];
+    for (var i=0; this.props.picks && i < this.props.picks.length; i++) {
+      cards.push(
+        (<CardListItem
+           key={this.props.picks[i].name}
+           card={this.props.picks[i]} />)
+      );
+    }
+
+
+    return (
+      <div className="OpponentLastPicks">
+        <h2>Opponent&apos;s Last Picks</h2>
+        {cards}
+      </div>
     );
   }
 }
@@ -143,6 +164,7 @@ class ActiveDraft extends Component {
   state = {
     cards: null,
     decklist: null,
+    opponent_last_picks: null,
     selectedCol: null,
     selectedRow: null,
     pack_number: null
@@ -159,12 +181,14 @@ class ActiveDraft extends Component {
     this.connection.onmessage = (event) => {
       console.log("Got refresh message");
       this.getCurrentPack();
+      this.updateOpponentLastPicks();
     }
   }
 
   updateDraft = async () => {
     await this.getCurrentPack();
     await this.updateDecklist();
+    await this.updateOpponentLastPicks();
   }
 
   getCurrentPack = async () => {
@@ -202,11 +226,28 @@ class ActiveDraft extends Component {
     });
   };
 
+  updateOpponentLastPicks = async () => {
+    const response = await fetch('/api/current_draft/seat/' + this.props.seat + '/opponent_last_picks', {
+      credentials: 'same-origin',
+    });
+    const body = await response.json();
+
+    if (response.status !== 200) {
+      console.log(body.message);
+      throw Error(body.message);
+    }
+
+    this.setState({
+      opponent_last_picks: body
+    });
+  };
+
   render() {
     return (
       <div className="DraftContainer">
         <p>Pack Number {this.state.pack_number}</p>
         <Decklist decklist={this.state.decklist}/>
+        <OpponentLastPicks picks={this.state.opponent_last_picks}/>
         { this.state.cards &&
           <div className="draft">
             <ColumnButtons

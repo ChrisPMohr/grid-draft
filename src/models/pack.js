@@ -15,6 +15,7 @@ class Pack extends Model {
         id: { type: 'integer' },
         selected_col: { type: 'integer' },
         selected_row: { type: 'integer' },
+        pack_number: { type: 'integer' },
         draft_id: { type: 'integer' }
       }
     };

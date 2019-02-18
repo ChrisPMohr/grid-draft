@@ -13,6 +13,7 @@ CREATE TABLE packs (
   id INTEGER PRIMARY KEY,
   selected_col INTEGER,
   selected_row INTEGER,
+  pack_number INTEGER,
   draft_id INTEGER,
   FOREIGN KEY(draft_id) REFERENCES drafts(id)
 );
@@ -47,6 +48,7 @@ CREATE TABLE pack_cards (
 CREATE TABLE decklist_cards (
   card_id INTEGER,
   decklist_id INTEGER,
+  pick_number INTEGER,
   FOREIGN KEY(card_id) REFERENCES cards(id),
   FOREIGN KEY(decklist_id) REFERENCES decklists(id),
   PRIMARY KEY(card_id, decklist_id)

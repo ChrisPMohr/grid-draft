@@ -105,9 +105,12 @@ async function createShuffledCube(draft) {
 }
 
 async function createPack(draft, trx) {
+  const pack_count_response = await draft.$relatedQuery('packs', trx).count();
+  const pack_number = pack_count_response[0]['count(*)'] + 1;
+
   const pack = await draft
     .$relatedQuery('packs', trx)
-    .insert({});
+    .insert({pack_number: pack_number});
 
   const shuffled_cards = await draft
     .$relatedQuery('shuffled_cards', trx)
@@ -157,6 +160,10 @@ async function getCurrentPack(draft, trx) {
 
 function isFirstPick(pack) {
   return pack.selected_row == null && pack.selected_col == null;
+}
+
+function getOtherSeatNumber(seat_number) {
+  return 1 - seat_number
 }
 
 async function pickCards(row, col, user, refreshClient) {
@@ -215,12 +222,14 @@ async function pickCards(row, col, user, refreshClient) {
 
       await decklist
         .$relatedQuery('cards', trx)
-        .relate({id: card.id});
+        .relate({
+            id: card.id,
+            pick_number: pack.pack_number});
     }
 
     // update turn in draft
     const is_first_pick = isFirstPick(pack);
-    const other_seat_number = 1 - current_seat_number
+    const other_seat_number = getOtherSeatNumber(current_seat_number)
     if (is_first_pick) {
       // If first pick on this pack, flip the current player
       await draft
@@ -265,18 +274,13 @@ async function getPackCardsJson(pack) {
 async function getCurrentState(draft) {
   const pack = await getCurrentPack(draft);
   const pack_cards_json = await getPackCardsJson(pack);
-  const pack_num_response = await draft.$relatedQuery('packs').count();
-  console.log(pack_num_response);
-  const pack_num = pack_num_response[0]['count(*)'];
-  console.log(pack_num);
 
   return {
     cards: pack_cards_json,
     selected_row: pack.selected_row,
     selected_col: pack.selected_col,
     current_seat_number: draft.current_seat_number,
-    new_field: 4,
-    pack_number: pack_num
+    pack_number: pack.pack_number
   };
 }
 
@@ -295,6 +299,34 @@ async function getDecklistCardJson(draft, seat_number, user) {
   }
   const cards = await decklist
     .$relatedQuery('cards');
+  return cards.map((card) => (
+    {
+      name: card.name,
+      url: card.image_url
+    })
+  );
+}
+
+async function getOpponentLastPickCardJson(draft, seat_number, user) {
+  const opponent_seat_number = getOtherSeatNumber(seat_number)
+  const decklist = await draft
+    .$relatedQuery('decklists')
+    .where({seat_number: opponent_seat_number})
+    .first();
+  if (! decklist) {
+    throw Error("Can't find decklist");
+  }
+
+  const pack = await getCurrentPack(draft);
+  if (! pack) {
+    throw Error("Can't find pack");
+  }
+  const previous_pack_number = pack.pack_number - 1;
+
+  const cards = await decklist
+    .$relatedQuery('cards')
+    .where('pick_number', previous_pack_number);
+
   return cards.map((card) => (
     {
       name: card.name,
@@ -382,6 +414,20 @@ function initDraft(app, refreshClient) {
           res.status(500).send({"message": e.message});
         });
   });
+
+  app.get('/api/current_draft/seat/:seat/opponent_last_picks',
+    passport.requireLoggedIn(),
+    (req, res) => {
+      seat_int = parseInt(req.params.seat);
+      getCurrentDraft()
+        .then(draft => getOpponentLastPickCardJson(draft, seat_int, req.user))
+        .then(json => res.send(json))
+        .catch(e => {
+          console.log("GET /api/current_draft/seat/:seat/opponent_last_picks error: ", e);
+          res.status(500).send({"message": e.message});
+        });
+  });
+
   
   app.post('/api/pick_cards',
     passport.requireLoggedIn(),

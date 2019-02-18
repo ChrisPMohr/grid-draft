@@ -36,7 +36,8 @@ class Decklist extends Model {
           from: "decklists.id",
           through: {
             from: "decklist_cards.decklist_id",
-            to: "decklist_cards.card_id"
+            to: "decklist_cards.card_id",
+            extra: ["pick_number"]
           },
           to: "cards.id"
         }

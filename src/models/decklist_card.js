@@ -13,7 +13,8 @@ class DecklistCard extends Model {
 
       properties: {
         card_id: { type: 'integer' },
-        draft_id: { type: 'integer' }
+        draft_id: { type: 'integer' },
+        pick_number: { type: 'integer' }
       }
     };
   }

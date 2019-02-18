@@ -8,6 +8,10 @@
   left: 0;
 }
 
+.OpponentLastPicks {
+  float: right;
+}
+
 .card-row {
   height: 200px;
   width: 650px;

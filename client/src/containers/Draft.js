@@ -172,7 +172,7 @@ class ActiveDraft extends Component {
 
   async componentDidMount() {
     await this.updateDraft();
-    this.connection = new WebSocket('ws://35.237.131.111:8080');
+    this.connection = new WebSocket('ws://34.73.130.219:8080');
     console.log("Created websocket connection");
     this.connection.onopen = (event) => {
       this.connection.send(this.props.seat);

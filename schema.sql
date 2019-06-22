@@ -3,10 +3,16 @@ CREATE TABLE cards (
   name TEXT
 );
 
-CREATE TABLE drafts (
+CREATE TABLE draft_lobbies (
+  id INTEGER PRIMARY KEY,
+  started BOOLEAN
+);
+
+CREATE TABLE grid_drafts (
   id INTEGER PRIMARY KEY,
   current_seat_number INTEGER,
-  started BOOLEAN
+  draft_lobby_id INTEGER,
+  FOREIGN KEY(draft_lobby_id) REFERENCES draft_lobbies(id)
 );
 
 CREATE TABLE packs (
@@ -15,21 +21,21 @@ CREATE TABLE packs (
   selected_row INTEGER,
   pack_number INTEGER,
   draft_id INTEGER,
-  FOREIGN KEY(draft_id) REFERENCES drafts(id)
+  FOREIGN KEY(draft_id) REFERENCES grid_drafts(id)
 );
 
 CREATE TABLE decklists (
   id INTEGER PRIMARY KEY,
   draft_id INTEGER,
   seat_number INTEGER,
-  FOREIGN KEY(draft_id) REFERENCES drafts(id)
+  FOREIGN KEY(draft_id) REFERENCES draft_lobbies(id)
 );
 
 CREATE TABLE shuffled_cube_cards (
   position INTEGER,
   draft_id INTEGER,
   card_id INTEGER,
-  FOREIGN KEY(draft_id) REFERENCES drafts(id),
+  FOREIGN KEY(draft_id) REFERENCES draft_lobbies(id),
   FOREIGN KEY(card_id) REFERENCES cards(id),
   PRIMARY KEY(draft_id, position)
 );
@@ -65,7 +71,7 @@ CREATE TABLE draft_player_seats (
   seat_number INTEGER,
   draft_id INTEGER,
   user_id INTEGER,
-  FOREIGN KEY(draft_id) REFERENCES drafts(id),
+  FOREIGN KEY(draft_id) REFERENCES draft_lobbies(id),
   FOREIGN KEY(user_id) REFERENCES users(id),
   PRIMARY KEY(draft_id, seat_number)
 );

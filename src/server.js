@@ -13,7 +13,8 @@ var RedisStore = require('connect-redis')(session)
 var WebSocket = require('ws');
 
 var Card = require('./models/card');
-var Draft = require('./models/draft');
+var DraftLobby = require('./models/draft_lobby');
+var GridDraft = require('./models/grid_draft');
 var Pack = require('./models/pack');
 var Decklist = require('./models/decklist');
 var User = require('./models/user');
@@ -75,7 +76,8 @@ wss.on('connection', function connection(ws) {
 });
 
 async function cleanupDb() {
-  await Draft.query().delete();
+  await DraftLobby.query().delete();
+  await GridDraft.query().delete();
   await Pack.query().delete();
   await Decklist.query().delete();
 

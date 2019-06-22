@@ -4,9 +4,9 @@ var _ = require("underscore");
 
 const Model = require('objection').Model;
 
-class Draft extends Model {
+class DraftLobby extends Model {
   static get tableName() {
-    return 'drafts';
+    return 'draft_lobbies';
   }
 
   static get jsonSchema() {
@@ -15,27 +15,19 @@ class Draft extends Model {
 
       properties: {
         id: { type: 'integer' },
-        current_seat_number: { type: 'integer' },
-        started: { type: 'boolean' }
+        started: { type: 'boolean' },
+        type: {type: 'string'}
       }
     };
   }
 
   static get relationMappings() {
     return {
-      packs: {
-        relation: Model.HasManyRelation,
-        modelClass: __dirname + '/pack',
-        join: {
-          from: 'drafts.id',
-          to: 'packs.draft_id'
-        }
-      },
       decklists: {
         relation: Model.HasManyRelation,
         modelClass: __dirname + '/decklist',
         join: {
-          from: 'drafts.id',
+          from: 'draft_lobbies.id',
           to: 'decklists.draft_id'
         }
       },
@@ -43,7 +35,7 @@ class Draft extends Model {
         relation: Model.ManyToManyRelation,
         modelClass: __dirname + '/card',
         join: {
-          from: "drafts.id",
+          from: "draft_lobbies.id",
           through: {
             from: "shuffled_cube_cards.draft_id",
             to: "shuffled_cube_cards.card_id",
@@ -57,7 +49,7 @@ class Draft extends Model {
         relation: Model.ManyToManyRelation,
         modelClass: __dirname + '/user',
         join: {
-          from: "drafts.id",
+          from: "draft_lobbies.id",
           through: {
             from: "draft_player_seats.draft_id",
             to: "draft_player_seats.user_id",
@@ -76,16 +68,6 @@ class Draft extends Model {
       .count('* as playerCount');
     return response[0].playerCount;
   }
-
-  mapping () {
-   return _.pick(this, ['id', 'current_seat_number', 'started']);
-  }
-
-  async computedMapping() {
-    const mapping = this.mapping();
-    mapping.playerCount = await this.getPlayerCount();
-    return mapping;
-  }
 }
 
-module.exports = Draft;
+module.exports = DraftLobby;

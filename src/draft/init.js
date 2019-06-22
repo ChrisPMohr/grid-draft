@@ -4,7 +4,8 @@ var { transaction } = require('objection');
 var passport = require('passport')
 
 var Card = require('../models/card');
-var Draft = require('../models/draft');
+var DraftLobby = require('../models/draft_lobby');
+var GridDraft = require('../models/grid_draft');
 var User = require('../models/user');
 
 var PackCard = require('../models/pack_card');
@@ -12,7 +13,8 @@ var PackCard = require('../models/pack_card');
 
 async function setUpDraft() {
   try {
-    const draft = await createDraft();
+    const draft_lobby = await createDraftLobby();
+    const grid_draft = await createGridDraft(draft_lobby);
     //const user = await User
     //  .query()
     //  .where({username: 'user'})
@@ -29,61 +31,87 @@ async function setUpDraft() {
   }
 }
 
-async function createAndJoinDraft(user) {
-  const draft = await createDraft();
-  const updated_draft_and_seat_number = await joinDraft(draft, user);
+async function createAndJoinDraftLobby(user) {
+  const draft_lobby = await createDraftLobby();
+  const grid_draft = await createGridDraft(draft_lobby);
+  const updated_draft_and_seat_number = await joinDraftLobby(draft_lobby, user);
   return updated_draft_and_seat_number;
 }
 
-async function joinDraft(draft, user) {
-  const playerCount = await draft.getPlayerCount();
+async function joinDraftLobby(draft_lobby, user) {
+  const playerCount = await draft_lobby.getPlayerCount();
   const seatNumber = playerCount;
 
+  const grid_draft = await getDraftForLobby(draft_lobby)
+
   if (playerCount < 2) {
-    await draft
+    await draft_lobby
       .$relatedQuery('players')
       .relate({id: user.id, seat_number: seatNumber});
     if (playerCount == 1) {
       console.log("Starting draft");
-      const updated_draft = await startDraft(draft);
-      return [updated_draft, seatNumber];
+      const updated_draft_lobby = await startDraftLobby(draft_lobby);
+      const updated_grid_draft = await grid_draft
+        .$query()
+        .patchAndFetch({current_seat_number: 0});
+
+      try {
+        await createPack(grid_draft);
+      } catch (e) {
+        console.log("Caught error creating pack", e);
+        throw e;
+      }
+
+      return [updated_grid_draft, seatNumber];
     } else {
-      return [draft, seatNumber];
+      return [grid_draft, seatNumber];
     }
   } else {
     throw Error('Draft is full');
   }
 }
 
-async function createDraft() {
+async function createDraftLobby() {
   try {
-    const draft = await Draft
+    const draft_lobby = await DraftLobby
       .query()
       .insert({started: false});
-    return draft;
+    return draft_lobby;
   } catch (e) {
-    console.log("Caught error creating cube", e);
+    console.log("Caught error creating lobby", e);
     throw e;
   }
 }
 
-async function startDraft(draft) {
-  await createDecklist(draft, 0);
-  await createDecklist(draft, 1);
-  await createShuffledCube(draft);
-  const updated_draft = await draft
-    .$query()
-    .patchAndFetch({started: true, current_seat_number: 0});
-  return updated_draft
+async function createGridDraft(draft_lobby) {
+  try {
+    const grid_draft = await GridDraft
+      .query()
+      .insert({draft_lobby_id: draft_lobby.id});
+    return grid_draft;
+  } catch (e) {
+    console.log("Caught error creating grid_draft", e);
+    throw e;
+  }
 }
 
-async function createDecklist(draft, seat_number) {
-  return draft
+async function startDraftLobby(draft_lobby) {
+  await createDecklist(draft_lobby, 0);
+  await createDecklist(draft_lobby, 1);
+  await createShuffledCube(draft_lobby);
+  const updated_draft_lobby = await draft_lobby
+    .$query()
+    .patchAndFetch({started: true});
+  return updated_draft_lobby
+}
+
+async function createDecklist(draft_lobby, seat_number) {
+  return draft_lobby
     .$relatedQuery('decklists')
     .insert({seat_number: seat_number});
 }
 
-async function createShuffledCube(draft) {
+async function createShuffledCube(draft_lobby) {
   const cards = await Card
     .query();
 
@@ -91,34 +119,29 @@ async function createShuffledCube(draft) {
 
   for (i = 0; i < shuffled_cards.length; i++) {
     const card = shuffled_cards[i];
-    await draft
+    await draft_lobby
       .$relatedQuery('shuffled_cards')
       .relate({id: card.id, position: i});
   }
-
-  try {
-    await createPack(draft);
-  } catch (e) {
-    console.log("Caught error creating pack", e);
-    throw e;
-  }
 }
 
-async function createPack(draft, trx) {
-  const pack_count_response = await draft.$relatedQuery('packs', trx).count();
+async function createPack(grid_draft, trx) {
+  const pack_count_response = await grid_draft.$relatedQuery('packs', trx).count();
   const pack_number = pack_count_response[0]['count(*)'] + 1;
 
-  const pack = await draft
+  const pack = await grid_draft
     .$relatedQuery('packs', trx)
     .insert({pack_number: pack_number});
 
-  const shuffled_cards = await draft
+  const draft_lobby = await grid_draft
+    .$relatedQuery('draft_lobby', trx);
+  const shuffled_cards = await draft_lobby
     .$relatedQuery('shuffled_cards', trx)
     .orderBy('position')
     .limit(9);
   for (i = 0; i < shuffled_cards.length; i++) {
     const card = shuffled_cards[i];
-    await draft
+    await draft_lobby
       .$relatedQuery('shuffled_cards', trx)
       .unrelate()
       .where('id', card.id)
@@ -135,20 +158,34 @@ async function createPack(draft, trx) {
   }
 }
 
-async function getCurrentDraft() { try {
-    return await Draft
+async function getCurrentDraftLobby() {
+  try {
+    return await DraftLobby
       .query()
       .orderBy('id', 'desc')
       .limit(1)
       .first();
   } catch (e) {
-    console.log("No current draft", e);
+    console.log("No current lobby", e);
   }
 }
 
-async function getCurrentPack(draft, trx) {
+async function getDraftForLobby(draft_lobby) {
   try {
-    return await draft
+    return await GridDraft
+      .query()
+      .where('draft_lobby_id', '=', draft_lobby.id)
+      .limit(1)
+      .first()
+  } catch (e) {
+    console.log("No matching draft", e);
+  }
+}
+
+
+async function getCurrentPack(grid_draft, trx) {
+  try {
+    return await grid_draft
       .$relatedQuery('packs', trx)
       .orderBy('id', 'desc')
       .limit(1)
@@ -172,12 +209,14 @@ async function pickCards(row, col, user, refreshClient) {
   } else {
     col_number = col - 1;
   }
-  const draft = await getCurrentDraft();
-  const knex = Draft.knex();
+  const draft_lobby = await getCurrentDraftLobby();
+  const grid_draft = await getDraftForLobby(draft_lobby);
+
+  const knex = GridDraft.knex();
 
   await transaction(knex, async (trx) => {
-    const current_seat_number = draft.current_seat_number;
-    const current_player = await draft
+    const current_seat_number = grid_draft.current_seat_number;
+    const current_player = await draft_lobby
       .$relatedQuery('players', trx)
       .where({seat_number: current_seat_number})
       .first();
@@ -187,13 +226,13 @@ async function pickCards(row, col, user, refreshClient) {
     }
 
     // get decklist for user + draft
-    const decklist = await draft
+    const decklist = await draft_lobby
       .$relatedQuery('decklists', trx)
       .where({seat_number: current_seat_number})
       .first();
 
     // get pack
-    const pack = await getCurrentPack(draft, trx);
+    const pack = await getCurrentPack(grid_draft, trx);
 
     // get selected cards
     var cards;
@@ -232,13 +271,13 @@ async function pickCards(row, col, user, refreshClient) {
     const other_seat_number = getOtherSeatNumber(current_seat_number)
     if (is_first_pick) {
       // If first pick on this pack, flip the current player
-      await draft
+      await grid_draft
         .$query(trx)
         .patch({current_seat_number: other_seat_number});
       refreshClient(other_seat_number);
     } else {
       // Keep player number the same and create a new pack
-      await createPack(draft, trx);
+      await createPack(grid_draft, trx);
       refreshClient(other_seat_number);
     }
 
@@ -271,15 +310,15 @@ async function getPackCardsJson(pack) {
     ), 3);
 }
 
-async function getCurrentState(draft) {
-  const pack = await getCurrentPack(draft);
+async function getDraftCurrentState(grid_draft) {
+  const pack = await getCurrentPack(grid_draft);
   const pack_cards_json = await getPackCardsJson(pack);
 
   return {
     cards: pack_cards_json,
     selected_row: pack.selected_row,
     selected_col: pack.selected_col,
-    current_seat_number: draft.current_seat_number,
+    current_seat_number: grid_draft.current_seat_number,
     pack_number: pack.pack_number
   };
 }
@@ -307,9 +346,9 @@ async function getDecklistCardJson(draft, seat_number, user) {
   );
 }
 
-async function getOpponentLastPickCardJson(draft, seat_number, user) {
+async function getOpponentLastPickCardJson(draft_lobby, seat_number, user) {
   const opponent_seat_number = getOtherSeatNumber(seat_number)
-  const decklist = await draft
+  const decklist = await draft_lobby
     .$relatedQuery('decklists')
     .where({seat_number: opponent_seat_number})
     .first();
@@ -317,7 +356,8 @@ async function getOpponentLastPickCardJson(draft, seat_number, user) {
     throw Error("Can't find decklist");
   }
 
-  const pack = await getCurrentPack(draft);
+  const grid_draft = await getDraftForLobby(draft_lobby);
+  const pack = await getCurrentPack(grid_draft);
   if (! pack) {
     throw Error("Can't find pack");
   }
@@ -338,7 +378,8 @@ async function getOpponentLastPickCardJson(draft, seat_number, user) {
 function initDraft(app, refreshClient) {
   app.get('/api/current_draft',
     (req, res) => {
-      getCurrentDraft()
+      getCurrentDraftLobby()
+        .then(lobby => getDraftForLobby(lobby))
         .then(draft => draft.computedMapping())
         .then(mapping => res.send(mapping))
         .catch(e => {
@@ -346,15 +387,15 @@ function initDraft(app, refreshClient) {
           res.status(500).send({"message": e.message});
         });
   });
-  
+
   app.post('/api/draft',
     passport.requireLoggedIn(),
     (req, res) => {
-      createAndJoinDraft(req.user)
+      createAndJoinDraftLobby(req.user)
         .then(draft_and_seat_number => {
           return [
-            draft_and_seat_number[0].computedMapping(),
-            draft_and_seat_number[1]];
+            draft_and_seat_number[1].computedMapping(),
+            draft_and_seat_number[2]];
         })
         .then(draft_mapping_and_seat_number => {
           res.send({
@@ -367,12 +408,12 @@ function initDraft(app, refreshClient) {
           res.status(500).send({"message": e.message});
         });
   });
-  
+
   app.post('/api/join_current_draft',
     passport.requireLoggedIn(),
     (req, res) => {
-      getCurrentDraft()
-        .then(draft => joinDraft(draft, req.user))
+      getCurrentDraftLobby()
+        .then(lobby => joinDraftLobby(lobby, req.user))
         .then(draft_and_seat_number => {
           return [
             draft_and_seat_number[0].computedMapping(),
@@ -389,24 +430,25 @@ function initDraft(app, refreshClient) {
           res.status(500).send({"message": e.message});
         });
   });
-  
+
   app.get('/api/current_pack',
     passport.requireLoggedIn(),
     (req, res) => {
-      getCurrentDraft()
-        .then(draft => getCurrentState(draft))
+      getCurrentDraftLobby()
+        .then(lobby => getDraftForLobby(lobby))
+        .then(draft => getDraftCurrentState(draft))
         .then(json => res.send(json))
         .catch(e => {
           console.log("GET /api/current_pack error: ", e);
           res.status(500).send({"message": e.message});
         });
   });
-  
+
   app.get('/api/current_draft/seat/:seat/decklist',
     passport.requireLoggedIn(),
     (req, res) => {
       seat_int = parseInt(req.params.seat);
-      getCurrentDraft()
+      getCurrentDraftLobby()
         .then(draft => getDecklistCardJson(draft, seat_int, req.user))
         .then(json => res.send(json))
         .catch(e => {
@@ -419,8 +461,8 @@ function initDraft(app, refreshClient) {
     passport.requireLoggedIn(),
     (req, res) => {
       seat_int = parseInt(req.params.seat);
-      getCurrentDraft()
-        .then(draft => getOpponentLastPickCardJson(draft, seat_int, req.user))
+      getCurrentDraftLobby()
+        .then(lobby => getOpponentLastPickCardJson(lobby, seat_int, req.user))
         .then(json => res.send(json))
         .catch(e => {
           console.log("GET /api/current_draft/seat/:seat/opponent_last_picks error: ", e);
@@ -428,13 +470,12 @@ function initDraft(app, refreshClient) {
         });
   });
 
-  
   app.post('/api/pick_cards',
     passport.requireLoggedIn(),
     (req, res) => {
       var row = req.body.row;
       var col = req.body.col;
-  
+
       if (row || col) {
         pickCards(row, col, req.user, refreshClient)
           .then(result => res.send({}))

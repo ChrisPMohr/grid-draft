@@ -34,12 +34,12 @@ class DraftPlayerSeat extends Model {
           to: 'users.id'
         }
       },
-      draft: {
+      draft_lobby: {
         relation: Model.BelongsToOneRelation,
-        modelClass: __dirname + '/draft',
+        modelClass: __dirname + '/draft_lobby',
         join: {
           from: 'draft_player_seats.draft_id',
-          to: 'drafts.id'
+          to: 'draft_lobbies.id'
         }
       }
     };

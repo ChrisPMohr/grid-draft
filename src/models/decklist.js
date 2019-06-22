@@ -21,12 +21,12 @@ class Decklist extends Model {
 
   static get relationMappings() {
     return {
-      draft: {
+      draft_lobby: {
         relation: Model.BelongsToOneRelation,
-        modelClass: __dirname + '/draft',
+        modelClass: __dirname + '/draft_lobby',
         join: {
           from: 'decklists.draft_id',
-          to: 'drafts.id'
+          to: 'draft_lobbies.id'
         }
       },
       cards: {

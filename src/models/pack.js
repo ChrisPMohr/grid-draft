@@ -25,10 +25,10 @@ class Pack extends Model {
     return {
       draft: {
         relation: Model.BelongsToOneRelation,
-        modelClass: __dirname + '/draft',
+        modelClass: __dirname + '/grid_draft',
         join: {
           from: 'packs.draft_id',
-          to: 'drafts.id'
+          to: 'grid_drafts.id'
         }
       },
       cards: {

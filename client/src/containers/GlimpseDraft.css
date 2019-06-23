@@ -1,0 +1,23 @@
+.DraftContainer {
+  position: relative;
+}
+
+.Decklist {
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+.card-row {
+  width: 700px;
+  margin: 0 auto;
+}
+
+.card-image {
+  width: 140px;
+  height: 200px;
+}
+
+.selected {
+  filter: grayscale(100%);
+}

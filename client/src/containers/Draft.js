@@ -1,5 +1,6 @@
 import React, { Component } from "react";
 import GridDraft from "./GridDraft";
+import GlimpseDraft from "./GlimpseDraft";
 
 
 export default class Draft extends Component {
@@ -40,7 +41,8 @@ export default class Draft extends Component {
     if (this.state.draft.started) {
       return (
         {
-          'grid': <GridDraft seat={this.props.match.params.seat}/>
+          'grid': <GridDraft seat={this.props.match.params.seat}/>,
+          'glimpse': <GlimpseDraft seat={this.props.match.params.seat}/>
         }[this.state.draft.type]
       );
     } else {

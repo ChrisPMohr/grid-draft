@@ -81,27 +81,27 @@ class DraftLobby extends Model {
     return mapping;
   }
 
-  async getDraft() {
+  getDraftType() {
     switch(this.type) {
       case "grid":
-        try {
-          return await GridDraft
-            .query()
-            .where('draft_lobby_id', '=', this.id)
-            .first()
-        } catch (e) {
-          console.log("No matching draft", e);
-          throw e;
-        }
-        break;
+        return GridDraft;
+    }
+  }
+
+  async getDraft() {
+    try {
+      return await this.getDraftType()
+        .query()
+        .where('draft_lobby_id', '=', this.id)
+        .first()
+    } catch (e) {
+      console.log("No matching draft", e);
+      throw e;
     }
   }
 
   async createDraft() {
-    switch(this.type) {
-      case "grid":
-        return await GridDraft.createDraft(this);
-    }
+    return await this.getDraftType().createDraft(this);
   }
 
   async takeCards(count, trx) {

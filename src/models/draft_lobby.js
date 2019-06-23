@@ -1,5 +1,7 @@
 var _ = require("underscore");
 
+var GridDraft = require('../models/grid_draft');
+
 'use strict';
 
 const Model = require('objection').Model;
@@ -77,6 +79,29 @@ class DraftLobby extends Model {
     const mapping = this.mapping();
     mapping.playerCount = await this.getPlayerCount();
     return mapping;
+  }
+
+  async getDraft() {
+    switch(this.type) {
+      case "grid":
+        try {
+          return await GridDraft
+            .query()
+            .where('draft_lobby_id', '=', this.id)
+            .first()
+        } catch (e) {
+          console.log("No matching draft", e);
+          throw e;
+        }
+        break;
+    }
+  }
+
+  async createDraft() {
+    switch(this.type) {
+      case "grid":
+        return await GridDraft.createDraft(this);
+    }
   }
 
   async takeCards(count, trx) {

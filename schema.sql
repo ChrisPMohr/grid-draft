@@ -5,7 +5,8 @@ CREATE TABLE cards (
 
 CREATE TABLE draft_lobbies (
   id INTEGER PRIMARY KEY,
-  started BOOLEAN
+  started BOOLEAN,
+  type TEXT
 );
 
 CREATE TABLE grid_drafts (

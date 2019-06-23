@@ -5,30 +5,26 @@ var passport = require('passport')
 
 var Card = require('../models/card');
 var DraftLobby = require('../models/draft_lobby');
-var GridDraft = require('../models/grid_draft');
 var User = require('../models/user');
 
 
 async function setUpDraft() {
   try {
-    const draft_lobby = await createDraftLobby();
-    const grid_draft = await GridDraft.createDraft(draft_lobby);
+    const draft_lobby = await createDraftLobby("grid");
     console.log("Finished draft setup");
   } catch (e) {
     console.log("Error while setting up the server", e);
   }
 }
 
-async function createAndJoinDraftLobby(user) {
-  const draft_lobby = await createDraftLobby();
-  const grid_draft = await GridDraft.createDraft(draft_lobby);
+async function createAndJoinDraftLobby(user, draft_type) {
+  const draft_lobby = await createDraftLobby(draft_type);
   return await joinDraftLobby(draft_lobby, user);
 }
 
 async function joinDraftLobby(draft_lobby, user) {
   const playerCount = await draft_lobby.getPlayerCount();
   const seatNumber = playerCount;
-
 
   if (playerCount < 2) {
     await draft_lobby
@@ -37,8 +33,6 @@ async function joinDraftLobby(draft_lobby, user) {
     if (playerCount == 1) {
       console.log("Starting draft");
       const updated_draft_lobby = await startDraftLobby(draft_lobby);
-      const grid_draft = await getDraftForLobby(draft_lobby)
-      const updated_grid_draft = await grid_draft.startDraft();
 
       return [updated_draft_lobby, seatNumber];
     } else {
@@ -49,11 +43,12 @@ async function joinDraftLobby(draft_lobby, user) {
   }
 }
 
-async function createDraftLobby() {
+async function createDraftLobby(draft_type) {
   try {
     const draft_lobby = await DraftLobby
       .query()
-      .insert({started: false});
+      .insert({started: false, type: draft_type});
+    await draft_lobby.createDraft();
     return draft_lobby;
   } catch (e) {
     console.log("Caught error creating lobby", e);
@@ -68,6 +63,10 @@ async function startDraftLobby(draft_lobby) {
   const updated_draft_lobby = await draft_lobby
     .$query()
     .patchAndFetch({started: true});
+
+  const grid_draft = await draft_lobby.getDraft()
+  const updated_grid_draft = await grid_draft.startDraft();
+
   return updated_draft_lobby
 }
 
@@ -96,22 +95,9 @@ async function getCurrentDraftLobby() {
     return await DraftLobby
       .query()
       .orderBy('id', 'desc')
-      .limit(1)
       .first();
   } catch (e) {
     console.log("No current lobby", e);
-  }
-}
-
-async function getDraftForLobby(draft_lobby) {
-  try {
-    return await GridDraft
-      .query()
-      .where('draft_lobby_id', '=', draft_lobby.id)
-      .limit(1)
-      .first()
-  } catch (e) {
-    console.log("No matching draft", e);
   }
 }
 
@@ -153,7 +139,7 @@ function initDraft(app, refreshClient) {
   app.post('/api/draft',
     passport.requireLoggedIn(),
     (req, res) => {
-      createAndJoinDraftLobby(req.user)
+      createAndJoinDraftLobby(req.user, 'grid')
         .then(lobby_and_seat_number => {
           res.send({
             'draft': lobby_and_seat_number[0].computedMapping(),
@@ -187,7 +173,7 @@ function initDraft(app, refreshClient) {
     passport.requireLoggedIn(),
     (req, res) => {
       getCurrentDraftLobby()
-        .then(lobby => getDraftForLobby(lobby))
+        .then(lobby => lobby.getDraft())
         .then(draft => draft.getCurrentState(req.user))
         .then(json => res.send(json))
         .catch(e => {
@@ -216,7 +202,7 @@ function initDraft(app, refreshClient) {
 
       if (body) {
         getCurrentDraftLobby()
-          .then(lobby => getDraftForLobby(lobby))
+          .then(lobby => lobby.getDraft())
           .then(draft => draft.pickCards(body, req.user, refreshClient))
           .then(result => res.send({}))
           .catch(e => {

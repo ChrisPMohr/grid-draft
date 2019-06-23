@@ -10,7 +10,7 @@ var User = require('../models/user');
 
 async function setUpDraft() {
   try {
-    const draft_lobby = await createDraftLobby("grid");
+    const draft_lobby = await createDraftLobby("glimpse");
     console.log("Finished draft setup");
   } catch (e) {
     console.log("Error while setting up the server", e);

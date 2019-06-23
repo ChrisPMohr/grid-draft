@@ -22,6 +22,9 @@ var ShuffledCubeCard = require('./models/shuffled_cube_card');
 var GridDraft = require('./models/grid_draft');
 var GridDraftPack = require('./models/grid_draft_pack');
 var GridDraftPackCard = require('./models/grid_draft_pack_card');
+var GlimpseDraft = require('./models/glimpse_draft');
+var GlimpseDraftPack = require('./models/glimpse_draft_pack');
+var GlimpseDraftPackCard = require('./models/glimpse_draft_pack_card');
 
 const knex = Knex(knexConfig.development);
 
@@ -78,11 +81,14 @@ async function cleanupDb() {
   await DraftLobby.query().delete();
   await GridDraft.query().delete();
   await GridDraftPack.query().delete();
+  await GlimpseDraft.query().delete();
+  await GlimpseDraftPack.query().delete();
   await Decklist.query().delete();
 
   // Remove junction tables
   await ShuffledCubeCard.query().delete();
   await GridDraftPackCard.query().delete();
+  await GlimpseDraftPackCard.query().delete();
   await DecklistCard.query().delete();
   await DraftPlayerSeat.query().delete();
 }

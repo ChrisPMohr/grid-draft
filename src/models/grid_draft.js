@@ -50,7 +50,6 @@ class GridDraft extends Model {
       return await this
         .$relatedQuery('packs', trx)
         .orderBy('id', 'desc')
-        .limit(1)
         .first();
     } catch (e) {
       console.log("No current pack");
@@ -134,8 +133,7 @@ class GridDraft extends Model {
   }
 
   async createPack(trx) {
-    const pack_count_response = await this.$relatedQuery('packs', trx).count();
-    const pack_number = pack_count_response[0]['count(*)'] + 1;
+    const pack_number = (await this.$relatedQuery('packs', trx).resultSize()) + 1;
 
     const pack = await this
       .$relatedQuery('packs', trx)

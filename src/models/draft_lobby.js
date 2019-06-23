@@ -1,6 +1,7 @@
 var _ = require("underscore");
 
 var GridDraft = require('../models/grid_draft');
+var GlimpseDraft = require('../models/glimpse_draft');
 
 'use strict';
 
@@ -65,10 +66,9 @@ class DraftLobby extends Model {
   }
 
   async getPlayerCount() {
-    const response = await this
+    return await this
       .$relatedQuery('players')
-      .count('* as playerCount');
-    return response[0].playerCount;
+      .resultSize();
   }
 
   mapping () {
@@ -85,6 +85,8 @@ class DraftLobby extends Model {
     switch(this.type) {
       case "grid":
         return GridDraft;
+      case "glimpse":
+        return GlimpseDraft;
     }
   }
 
@@ -92,7 +94,7 @@ class DraftLobby extends Model {
     try {
       return await this.getDraftType()
         .query()
-        .where('draft_lobby_id', '=', this.id)
+        .where({draft_lobby_id: this.id})
         .first()
     } catch (e) {
       console.log("No matching draft", e);

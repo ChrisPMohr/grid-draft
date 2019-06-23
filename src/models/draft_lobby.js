@@ -72,7 +72,7 @@ class DraftLobby extends Model {
   }
 
   mapping () {
-   return _.pick(this, ['id', 'current_seat_number', 'started']);
+   return _.pick(this, ['id', 'current_seat_number', 'started', 'type']);
   }
 
   async computedMapping() {

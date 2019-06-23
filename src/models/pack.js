@@ -1,5 +1,8 @@
 'use strict';
 
+var _ = require("underscore");
+
+
 const Model = require('objection').Model;
 
 class Pack extends Model {
@@ -46,6 +49,20 @@ class Pack extends Model {
         }
       }
     };
+  }
+
+  async getCardsJson() {
+    const cards = await this
+      .$relatedQuery('cards')
+      .orderBy(['row', 'col'])
+    return _.chunk(
+      cards.map((card) => (
+        {
+          name: card.name,
+          selected: card.selected,
+          url: card.image_url
+        })
+      ), 3);
   }
 }
 

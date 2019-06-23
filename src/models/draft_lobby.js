@@ -68,6 +68,21 @@ class DraftLobby extends Model {
       .count('* as playerCount');
     return response[0].playerCount;
   }
+
+  async takeCards(count, trx) {
+    const shuffled_cards = await this
+      .$relatedQuery('shuffled_cards', trx)
+      .orderBy('position')
+      .limit(count);
+    for (i = 0; i < shuffled_cards.length; i++) {
+      const card = shuffled_cards[i];
+      await this
+        .$relatedQuery('shuffled_cards', trx)
+        .unrelate()
+        .where('id', card.id)
+    }
+    return shuffled_cards;
+  }
 }
 
 module.exports = DraftLobby;

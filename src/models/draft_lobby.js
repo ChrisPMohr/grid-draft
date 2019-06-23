@@ -69,6 +69,16 @@ class DraftLobby extends Model {
     return response[0].playerCount;
   }
 
+  mapping () {
+   return _.pick(this, ['id', 'current_seat_number', 'started']);
+  }
+
+  async computedMapping() {
+    const mapping = this.mapping();
+    mapping.playerCount = await this.getPlayerCount();
+    return mapping;
+  }
+
   async takeCards(count, trx) {
     const shuffled_cards = await this
       .$relatedQuery('shuffled_cards', trx)

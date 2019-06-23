@@ -33,15 +33,13 @@ async function setUpDraft() {
 async function createAndJoinDraftLobby(user) {
   const draft_lobby = await createDraftLobby();
   const grid_draft = await GridDraft.createDraft(draft_lobby);
-  const updated_draft_and_seat_number = await joinDraftLobby(draft_lobby, user);
-  return updated_draft_and_seat_number;
+  return await joinDraftLobby(draft_lobby, user);
 }
 
 async function joinDraftLobby(draft_lobby, user) {
   const playerCount = await draft_lobby.getPlayerCount();
   const seatNumber = playerCount;
 
-  const grid_draft = await getDraftForLobby(draft_lobby)
 
   if (playerCount < 2) {
     await draft_lobby
@@ -50,11 +48,12 @@ async function joinDraftLobby(draft_lobby, user) {
     if (playerCount == 1) {
       console.log("Starting draft");
       const updated_draft_lobby = await startDraftLobby(draft_lobby);
+      const grid_draft = await getDraftForLobby(draft_lobby)
       const updated_grid_draft = await grid_draft.startDraft();
 
-      return [updated_grid_draft, seatNumber];
+      return [updated_draft_lobby, seatNumber];
     } else {
-      return [grid_draft, seatNumber];
+      return [draft_lobby, seatNumber];
     }
   } else {
     throw Error('Draft is full');
@@ -187,8 +186,7 @@ function initDraft(app, refreshClient) {
   app.get('/api/current_draft',
     (req, res) => {
       getCurrentDraftLobby()
-        .then(lobby => getDraftForLobby(lobby))
-        .then(draft => draft.computedMapping())
+        .then(lobby => lobby.computedMapping())
         .then(mapping => res.send(mapping))
         .catch(e => {
           console.log("GET /api/current_draft error: ", e);
@@ -200,15 +198,10 @@ function initDraft(app, refreshClient) {
     passport.requireLoggedIn(),
     (req, res) => {
       createAndJoinDraftLobby(req.user)
-        .then(draft_and_seat_number => {
-          return [
-            draft_and_seat_number[1].computedMapping(),
-            draft_and_seat_number[2]];
-        })
-        .then(draft_mapping_and_seat_number => {
+        .then(lobby_and_seat_number => {
           res.send({
-            'draft': draft_mapping_and_seat_number[0],
-            'seat': draft_mapping_and_seat_number[1]
+            'draft': lobby_and_seat_number[0].computedMapping(),
+            'seat': lobby_and_seat_number[1]
           });
         })
         .catch(e => {
@@ -222,15 +215,10 @@ function initDraft(app, refreshClient) {
     (req, res) => {
       getCurrentDraftLobby()
         .then(lobby => joinDraftLobby(lobby, req.user))
-        .then(draft_and_seat_number => {
-          return [
-            draft_and_seat_number[0].computedMapping(),
-            draft_and_seat_number[1]];
-        })
-        .then(draft_mapping_and_seat_number => {
+        .then(lobby_and_seat_number => {
           res.send({
-            'draft': draft_mapping_and_seat_number[0],
-            'seat': draft_mapping_and_seat_number[1]
+            'draft': lobby_and_seat_number[0].computedMapping(),
+            'seat': lobby_and_seat_number[1]
           });
         })
         .catch(e => {

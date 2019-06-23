@@ -45,18 +45,6 @@ class GridDraft extends Model {
     };
   }
 
-  mapping () {
-   return _.pick(this, ['id', 'current_seat_number']);
-  }
-
-  async computedMapping() {
-    const mapping = this.mapping();
-    const lobby = await this.$relatedQuery('draft_lobby');
-    mapping.playerCount = await lobby.getPlayerCount();
-    mapping.started = lobby.started;
-    return mapping;
-  }
-
   async getCurrentPack(user, trx) {
     try {
       return await this

@@ -180,19 +180,17 @@ class ActiveDraft extends Component {
     }
     this.connection.onmessage = (event) => {
       console.log("Got refresh message");
-      this.getCurrentPack();
-      this.updateOpponentLastPicks();
+      this.getDraftState();
     }
   }
 
   updateDraft = async () => {
-    await this.getCurrentPack();
+    await this.getDraftState();
     await this.updateDecklist();
-    await this.updateOpponentLastPicks();
   }
 
-  getCurrentPack = async () => {
-    const response = await fetch('/api/current_pack', {
+  getDraftState = async () => {
+    const response = await fetch('/api/current_draft/state', {
       credentials: 'same-origin',
     });
     const body = await response.json();
@@ -206,7 +204,8 @@ class ActiveDraft extends Component {
       pack_number: body.pack_number,
       cards: body.cards,
       selectedCol: body.selected_col,
-      selectedRow: body.selected_row
+      selectedRow: body.selected_row,
+      opponent_last_picks: body.opponent_last_picks
     })
   };
 
@@ -223,22 +222,6 @@ class ActiveDraft extends Component {
 
     this.setState({
       decklist: body
-    });
-  };
-
-  updateOpponentLastPicks = async () => {
-    const response = await fetch('/api/current_draft/seat/' + this.props.seat + '/opponent_last_picks', {
-      credentials: 'same-origin',
-    });
-    const body = await response.json();
-
-    if (response.status !== 200) {
-      console.log(body.message);
-      throw Error(body.message);
-    }
-
-    this.setState({
-      opponent_last_picks: body
     });
   };
 

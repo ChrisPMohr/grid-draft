@@ -9,21 +9,10 @@ var GridDraft = require('../models/grid_draft');
 var User = require('../models/user');
 
 
-
 async function setUpDraft() {
   try {
     const draft_lobby = await createDraftLobby();
     const grid_draft = await GridDraft.createDraft(draft_lobby);
-    //const user = await User
-    //  .query()
-    //  .where({username: 'user'})
-    //  .first();
-    //await joinDraft(draft, user);
-    //const user2 = await User
-    //  .query()
-    //  .where({username: 'user2'})
-    //  .first();
-    //await joinDraft(draft, user2);
     console.log("Finished draft setup");
   } catch (e) {
     console.log("Error while setting up the server", e);
@@ -126,10 +115,6 @@ async function getDraftForLobby(draft_lobby) {
   }
 }
 
-function getOtherSeatNumber(seat_number) {
-  return 1 - seat_number
-}
-
 async function getDecklistCardJson(draft_lobby, seat_number, user) {
   const decklist = await draft_lobby
     .$relatedQuery('decklists')
@@ -145,35 +130,6 @@ async function getDecklistCardJson(draft_lobby, seat_number, user) {
   }
   const cards = await decklist
     .$relatedQuery('cards');
-  return cards.map((card) => (
-    {
-      name: card.name,
-      url: card.image_url
-    })
-  );
-}
-
-async function getOpponentLastPickCardJson(draft_lobby, seat_number, user) {
-  const opponent_seat_number = getOtherSeatNumber(seat_number)
-  const decklist = await draft_lobby
-    .$relatedQuery('decklists')
-    .where({seat_number: opponent_seat_number})
-    .first();
-  if (! decklist) {
-    throw Error("Can't find decklist");
-  }
-
-  const grid_draft = await getDraftForLobby(draft_lobby);
-  const pack = await grid_draft.getCurrentPack(user);
-  if (! pack) {
-    throw Error("Can't find pack");
-  }
-  const previous_pack_number = pack.pack_number - 1;
-
-  const cards = await decklist
-    .$relatedQuery('cards')
-    .where('pick_number', previous_pack_number);
-
   return cards.map((card) => (
     {
       name: card.name,
@@ -227,7 +183,7 @@ function initDraft(app, refreshClient) {
         });
   });
 
-  app.get('/api/current_pack',
+  app.get('/api/current_draft/state',
     passport.requireLoggedIn(),
     (req, res) => {
       getCurrentDraftLobby()
@@ -249,19 +205,6 @@ function initDraft(app, refreshClient) {
         .then(json => res.send(json))
         .catch(e => {
           console.log("GET /api/current_draft/seat/:seat/decklist error: ", e);
-          res.status(500).send({"message": e.message});
-        });
-  });
-
-  app.get('/api/current_draft/seat/:seat/opponent_last_picks',
-    passport.requireLoggedIn(),
-    (req, res) => {
-      seat_int = parseInt(req.params.seat);
-      getCurrentDraftLobby()
-        .then(lobby => getOpponentLastPickCardJson(lobby, seat_int, req.user))
-        .then(json => res.send(json))
-        .catch(e => {
-          console.log("GET /api/current_draft/seat/:seat/opponent_last_picks error: ", e);
           res.status(500).send({"message": e.message});
         });
   });

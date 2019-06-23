@@ -60,14 +60,51 @@ class GridDraft extends Model {
   async getCurrentState(user) {
     const pack = await this.getCurrentPack(user);
     const pack_cards_json = await pack.getCardsJson();
+    const opponent_last_picks = await this.getOpponentLastPicks(user);
 
     return {
       cards: pack_cards_json,
       selected_row: pack.selected_row,
       selected_col: pack.selected_col,
       current_seat_number: this.current_seat_number,
-      pack_number: pack.pack_number
+      pack_number: pack.pack_number,
+      opponent_last_picks: opponent_last_picks
     };
+  }
+
+  async getOpponentLastPicks(user) {
+    const draft_lobby = await this.$relatedQuery('draft_lobby');
+    const user_with_seat_number = await draft_lobby
+      .$relatedQuery('players')
+      .where('user_id', user.id)
+      .first();
+    const user_seat_number = user_with_seat_number.seat_number
+    const opponent_seat_number = getOtherSeatNumber(user_seat_number)
+
+    const decklist = await draft_lobby
+      .$relatedQuery('decklists')
+      .where({seat_number: opponent_seat_number})
+      .first();
+    if (! decklist) {
+      throw Error("Can't find decklist");
+    }
+
+    const pack = await this.getCurrentPack(user);
+    if (! pack) {
+      throw Error("Can't find pack");
+    }
+    const previous_pack_number = pack.pack_number - 1;
+
+    const cards = await decklist
+      .$relatedQuery('cards')
+      .where('pick_number', previous_pack_number);
+
+    return cards.map((card) => (
+      {
+        name: card.name,
+        url: card.image_url
+      })
+    );
   }
 
   static async createDraft(draft_lobby) {

@@ -2,9 +2,9 @@
 
 const Model = require('objection').Model;
 
-class PackCard extends Model {
+class GridDraftPackCard extends Model {
   static get tableName() {
-    return 'pack_cards';
+    return 'grid_draft_pack_cards';
   }
 
   static get idColumn() {
@@ -27,4 +27,4 @@ class PackCard extends Model {
   }
 }
 
-module.exports = PackCard;
+module.exports = GridDraftPackCard;

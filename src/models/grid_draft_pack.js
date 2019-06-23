@@ -5,9 +5,9 @@ var _ = require("underscore");
 
 const Model = require('objection').Model;
 
-class Pack extends Model {
+class GridDraftPack extends Model {
   static get tableName() {
-    return 'packs';
+    return 'grid_draft_packs';
   }
 
   static get jsonSchema() {
@@ -30,7 +30,7 @@ class Pack extends Model {
         relation: Model.BelongsToOneRelation,
         modelClass: __dirname + '/grid_draft',
         join: {
-          from: 'packs.draft_id',
+          from: 'grid_draft_packs.draft_id',
           to: 'grid_drafts.id'
         }
       },
@@ -38,12 +38,12 @@ class Pack extends Model {
         relation: Model.ManyToManyRelation,
         modelClass: __dirname + '/card',
         join: {
-          from: "packs.id",
+          from: "grid_draft_packs.id",
           through: {
-            from: "pack_cards.pack_id",
-            to: "pack_cards.card_id",
+            from: "grid_draft_pack_cards.pack_id",
+            to: "grid_draft_pack_cards.card_id",
             extra: ["row", "col", "selected"],
-            modelClass: __dirname + '/pack_card'
+            modelClass: __dirname + '/grid_draft_pack_card'
           },
           to: "cards.id"
         }
@@ -66,4 +66,4 @@ class Pack extends Model {
   }
 }
 
-module.exports = Pack;
+module.exports = GridDraftPack;

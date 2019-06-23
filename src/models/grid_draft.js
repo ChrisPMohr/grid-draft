@@ -1,7 +1,7 @@
 var _ = require("underscore");
 var { transaction } = require('objection');
 
-var PackCard = require('../models/pack_card');
+var GridDraftPackCard = require('../models/grid_draft_pack_card');
 
 'use strict';
 
@@ -28,10 +28,10 @@ class GridDraft extends Model {
     return {
       packs: {
         relation: Model.HasManyRelation,
-        modelClass: __dirname + '/pack',
+        modelClass: __dirname + '/grid_draft_pack',
         join: {
           from: 'grid_drafts.id',
-          to: 'packs.draft_id'
+          to: 'grid_draft_packs.draft_id'
         }
       },
       draft_lobby: {
@@ -210,7 +210,7 @@ class GridDraft extends Model {
 
       // add cards into decklist
       for (var card of cards) {
-        await PackCard
+        await GridDraftPackCard
           .query(trx)
           .patch({selected: true})
           .where({card_id: card.id});

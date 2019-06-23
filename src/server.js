@@ -12,17 +12,16 @@ var session = require('express-session')
 var RedisStore = require('connect-redis')(session)
 var WebSocket = require('ws');
 
+var User = require('./models/user');
 var Card = require('./models/card');
 var DraftLobby = require('./models/draft_lobby');
-var GridDraft = require('./models/grid_draft');
-var Pack = require('./models/pack');
 var Decklist = require('./models/decklist');
-var User = require('./models/user');
-
-var ShuffledCubeCard = require('./models/shuffled_cube_card');
-var PackCard = require('./models/pack_card');
 var DecklistCard = require('./models/decklist_card');
 var DraftPlayerSeat = require('./models/draft_player_seat');
+var ShuffledCubeCard = require('./models/shuffled_cube_card');
+var GridDraft = require('./models/grid_draft');
+var GridDraftPack = require('./models/grid_draft_pack');
+var GridDraftPackCard = require('./models/grid_draft_pack_card');
 
 const knex = Knex(knexConfig.development);
 
@@ -78,12 +77,12 @@ wss.on('connection', function connection(ws) {
 async function cleanupDb() {
   await DraftLobby.query().delete();
   await GridDraft.query().delete();
-  await Pack.query().delete();
+  await GridDraftPack.query().delete();
   await Decklist.query().delete();
 
   // Remove junction tables
   await ShuffledCubeCard.query().delete();
-  await PackCard.query().delete();
+  await GridDraftPackCard.query().delete();
   await DecklistCard.query().delete();
   await DraftPlayerSeat.query().delete();
 }

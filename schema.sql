@@ -16,7 +16,7 @@ CREATE TABLE grid_drafts (
   FOREIGN KEY(draft_lobby_id) REFERENCES draft_lobbies(id)
 );
 
-CREATE TABLE packs (
+CREATE TABLE grid_draft_packs (
   id INTEGER PRIMARY KEY,
   selected_col INTEGER,
   selected_row INTEGER,
@@ -41,14 +41,14 @@ CREATE TABLE shuffled_cube_cards (
   PRIMARY KEY(draft_id, position)
 );
 
-CREATE TABLE pack_cards (
+CREATE TABLE grid_draft_pack_cards (
   row INTEGER,
   col INTEGER,
   card_id INTEGER,
   pack_id INTEGER,
   selected BOOLEAN,
   FOREIGN KEY(card_id) REFERENCES cards(id),
-  FOREIGN KEY(pack_id) REFERENCES packs(id),
+  FOREIGN KEY(pack_id) REFERENCES grid_draft_packs(id),
   PRIMARY KEY(pack_id, row, col)
 );
 

@@ -17,7 +17,7 @@ class Card extends Component {
 
 class RowButton extends Component {
   handleClick = async () => {
-    const response = await fetch('/api/pick_cards', {
+    const response = await fetch('/api/current_draft/seat/' + this.props.seat + '/pick_cards', {
       headers: {
         'Accept': 'application/json',
         'Content-Type': 'application/json'
@@ -46,7 +46,7 @@ class RowButton extends Component {
 
 class ColumnButton extends Component {
   handleClick = async () => {
-    const response = await fetch('/api/pick_cards', {
+    const response = await fetch('/api/current_draft/seat/' + this.props.seat + '/pick_cards', {
       headers: {
         'Accept': 'application/json',
         'Content-Type': 'application/json'
@@ -79,6 +79,7 @@ class CardRow extends Component {
       <div className="card-row">
         <RowButton
           row_number={this.props.row_number}
+          seat={this.props.seat}
           selected={this.props.selected}
           updateDraft={this.props.updateDraft} />
         {this.props.data.map((card_data) =>
@@ -96,6 +97,7 @@ class ColumnButtons extends Component {
         (<ColumnButton
            key={i}
            column_number={i + 1}
+           seat={this.props.seat}
            selected={this.props.selectedCol === i}
            updateDraft={this.props.updateDraft} />)
       );
@@ -190,7 +192,7 @@ export default class GridDraft extends Component {
   }
 
   getDraftState = async () => {
-    const response = await fetch('/api/current_draft/state', {
+    const response = await fetch('/api/current_draft/seat/' + this.props.seat + '/state', {
       credentials: 'same-origin',
     });
     const body = await response.json();
@@ -235,6 +237,7 @@ export default class GridDraft extends Component {
           <div className="draft">
             <ColumnButtons
               size={this.state.cards.length}
+              seat={this.props.seat}
               selectedCol={this.state.selectedCol}
               updateDraft={this.updateDraft} />
             {this.state.cards.map((row_data, i) =>
@@ -242,6 +245,7 @@ export default class GridDraft extends Component {
                 key={i}
                 data={row_data}
                 row_number={i + 1}
+                seat={this.props.seat}
                 selected={this.state.selectedRow === i}
                 updateDraft={this.updateDraft} />)}
           </div>

@@ -81,7 +81,7 @@ export default class GlimpseDraft extends Component {
   }
 
   getDraftState = async () => {
-    const response = await fetch('/api/current_draft/state', {
+    const response = await fetch('/api/current_draft/seat/' + this.props.seat + '/state', {
       credentials: 'same-origin',
     });
     const body = await response.json();

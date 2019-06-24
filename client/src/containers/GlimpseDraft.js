@@ -6,10 +6,11 @@ class Card extends Component {
   render() {
     return (
       <img
-        className="card-image"
+        className={"card-image " + (this.props.data.selected ? "selected" : "")}
         src={this.props.data.url}
         alt={this.props.data.name}
         title={this.props.data.name}
+        onClick={e => this.props.onClickCard(this.props.data.card_number)}
       />
     )
   }
@@ -20,7 +21,7 @@ class CardRow extends Component {
     return (
       <div className="card-row">
         {this.props.data.map((card_data) =>
-          <Card key={card_data.name} data={card_data} />)}
+          <Card key={card_data.name} data={card_data} onClickCard={this.props.onClickCard}/>)}
       </div>
     )
   }
@@ -58,7 +59,8 @@ export default class GlimpseDraft extends Component {
   state = {
     cards: null,
     decklist: null,
-    pack_number: null
+    pack_number: null,
+    picks: null
   };
 
   async componentDidMount() {
@@ -93,7 +95,8 @@ export default class GlimpseDraft extends Component {
 
     this.setState({
       pack_number: body.pack_number,
-      cards: body.cards
+      cards: body.cards,
+      picks: []
     })
   };
 
@@ -113,6 +116,53 @@ export default class GlimpseDraft extends Component {
     });
   };
 
+  onClickCard = async card_number => {
+    if (this.state.picks.includes(card_number)) {
+      console.log("Repicking card");
+      return;
+    }
+
+    const pickedCardIndex = this.state.cards.findIndex(card => {
+      return card.card_number === card_number;
+    });
+    if (pickedCardIndex === -1) {
+      console.log("Picking missing card");
+      return;
+    }
+
+    const updatedPicks = this.state.picks.concat(card_number);
+
+    const updatedCards = [...this.state.cards];
+    updatedCards[pickedCardIndex].selected = true;
+
+    this.setState({
+      picks: updatedPicks,
+      cards: updatedCards
+    });
+    if (updatedPicks.length === 3) {
+      await this.pickCards(updatedPicks);
+    }
+  }
+
+  pickCards = async picks => {
+    const response = await fetch('/api/current_draft/seat/' + this.props.seat + '/pick_cards', {
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json'
+      },
+      credentials: 'same-origin',
+      body: JSON.stringify({selected_card_number: picks[0], burned_card_numbers: picks.slice(1)}),
+      method: 'POST'
+    });
+    const body = await response.json();
+
+    await this.updateDraft();
+
+    if (response.status !== 200) throw Error(body.message);
+
+    return body;
+  };
+
   render() {
     return (
       <div className="DraftContainer">
@@ -122,7 +172,7 @@ export default class GlimpseDraft extends Component {
           <div className="draft">
             <CardRow
               data={this.state.cards}
-              updateDraft={this.updateDraft} />
+              onClickCard={this.onClickCard} />
           </div>
         }
       </div>

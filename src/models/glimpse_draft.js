@@ -59,7 +59,7 @@ class GlimpseDraft extends Model {
   async getCurrentPack(user_seat_number, user, trx) {
     try {
       // Get user's seat number
-      const draft_lobby = await this.$relatedQuery('draft_lobby');
+      const draft_lobby = await this.$relatedQuery('draft_lobby', trx);
       const is_player_in_seat = await draft_lobby.isPlayerInSeat(
         user, user_seat_number, trx);
       if (!is_player_in_seat) {
@@ -72,7 +72,7 @@ class GlimpseDraft extends Model {
         .$relatedQuery('packs', trx)
         .where({current_seat_number: user_seat_number, pack_number: pack_number});
 
-      // Pick the one with the higheset getNumCards
+      // Pick the one with the highest getNumCards
       var max_num_cards = 0;
       var max_pack = null;
       for (var pack of user_packs) {
@@ -82,7 +82,7 @@ class GlimpseDraft extends Model {
           max_pack = pack;
         }
       }
-      return pack;
+      return max_pack;
     } catch (e) {
       console.log("No current pack");
       console.log(e);
@@ -91,12 +91,20 @@ class GlimpseDraft extends Model {
 
   async getCurrentState(seat_number, user) {
     const pack = await this.getCurrentPack(seat_number, user);
-    const pack_cards_json = await pack.getCardsJson();
+    if (pack === null) {
+      const packNumber = await this.getPackNumber();
+      return {
+        cards: [],
+        pack_number: packNumber
+      };
+    } else {
+      const pack_cards_json = await pack.getCardsJson();
 
-    return {
-      cards: pack_cards_json,
-      pack_number: pack.pack_number,
-    };
+      return {
+        cards: pack_cards_json,
+        pack_number: pack.pack_number,
+      };
+    }
   }
 
   static async createDraft(draft_lobby) {
@@ -149,7 +157,7 @@ class GlimpseDraft extends Model {
     }
   }
 
-  async pickCards(body, seat_number, user, refreshClient) {
+  async pickCards(body, user_seat_number, user, refreshClient) {
     const selected_card_number = body.selected_card_number;
     const burned_card_numbers = body.burned_card_numbers;
 
@@ -158,22 +166,22 @@ class GlimpseDraft extends Model {
     const knex = GlimpseDraft.knex();
 
     await transaction(knex, async (trx) => {
-      const pack = await this.getCurrentPack(seat_number, user, trx);
+      const pack = await this.getCurrentPack(user_seat_number, user, trx);
 
       if (pack === null) {
         throw Error("No pack to pick from");
       }
 
-      const user_with_seat_number = await draft_lobby
-        .$relatedQuery('players', trx)
-        .where({user_id: user.id})
-        .first();
-      const user_seat_number = user_with_seat_number.seat_number
+      const is_player_in_seat = await draft_lobby.isPlayerInSeat(
+        user, user_seat_number, trx);
+      if (!is_player_in_seat) {
+        throw Error("Trying to make pick for another player");
+      }
 
       // get decklist for user + draft
       const decklist = await draft_lobby
         .$relatedQuery('decklists', trx)
-        .where({seat_number: current_seat_number})
+        .where({seat_number: user_seat_number})
         .first();
 
       // get selected card
@@ -186,7 +194,7 @@ class GlimpseDraft extends Model {
       await decklist
         .$relatedQuery('cards', trx)
         .relate({
-            id: card.id,
+            id: selected_card.id,
             pick_number: pack.pack_number});
 
       // remove cards from pack
@@ -195,13 +203,13 @@ class GlimpseDraft extends Model {
         .query(trx)
         .patch({is_available: false})
         .where('pack_id', pack.id)
-        .whereIn(card_number, burned_card_numbers);
+        .whereIn('card_number', burned_card_numbers);
 
       // update pack seat number
-      const new_seat_number = getOtherSeatNumber(current_seat_number);
+      const new_seat_number = getOtherSeatNumber(user_seat_number);
       await pack
         .$query(trx)
-        .patch({current_seat_number: other_seat_number});
+        .patch({current_seat_number: new_seat_number});
 
       // If all packs are done, start a new pack
       const pack_number = await this.getPackNumber(trx);
@@ -210,8 +218,8 @@ class GlimpseDraft extends Model {
         .where({pack_number: pack_number});
 
       var is_pack_done = true;
-      for (var pack of current_packs) {
-        const num_cards = await pack.getNumCards(trx);
+      for (var current_pack of current_packs) {
+        const num_cards = await current_pack.getNumCards(trx);
         if (num_cards > 0) {
           is_pack_done = false;
           break;
@@ -221,8 +229,8 @@ class GlimpseDraft extends Model {
       if (is_pack_done) {
         await this.createPacks(trx);
         // Update all players
-        for (var seat_number = 0; seat_number < 2; seat_number++) {
-          refreshClient(seat_number);
+        for (var player_seat_number = 0; player_seat_number < 2; player_seat_number++) {
+          refreshClient(player_seat_number);
         }
       } else {
         // Update the player who is being passed to

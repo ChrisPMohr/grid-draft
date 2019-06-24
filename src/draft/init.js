@@ -173,7 +173,7 @@ function initDraft(app, refreshClient) {
   app.get('/api/current_draft/seat/:seat/state',
     passport.requireLoggedIn(),
     (req, res) => {
-      seat_int = parseInt(req.params.seat);
+      const seat_int = parseInt(req.params.seat);
       getCurrentDraftLobby()
         .then(lobby => lobby.getDraft())
         .then(draft => draft.getCurrentState(seat_int, req.user))
@@ -187,7 +187,7 @@ function initDraft(app, refreshClient) {
   app.get('/api/current_draft/seat/:seat/decklist',
     passport.requireLoggedIn(),
     (req, res) => {
-      seat_int = parseInt(req.params.seat);
+      const seat_int = parseInt(req.params.seat);
       getCurrentDraftLobby()
         .then(lobby => getDecklistCardJson(lobby, seat_int, req.user))
         .then(json => res.send(json))
@@ -200,7 +200,7 @@ function initDraft(app, refreshClient) {
   app.post('/api/current_draft/seat/:seat/pick_cards',
     passport.requireLoggedIn(),
     (req, res) => {
-      seat_int = parseInt(req.params.seat);
+      const seat_int = parseInt(req.params.seat);
       var body = req.body;
 
       if (body) {

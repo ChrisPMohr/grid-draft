@@ -62,7 +62,7 @@ app.use(passport.session())
 const wss = new WebSocket.Server({ port: 8080 });
 var connections = {};
 
-// Broadcast to all.
+// Broadcast to given seat.
 function refreshClient(seat_number) {
   var client = connections[seat_number]
   if (client && client.readyState === WebSocket.OPEN) {

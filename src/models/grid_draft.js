@@ -56,7 +56,7 @@ class GridDraft extends Model {
     }
   }
 
-  async getCurrentState(user) {
+  async getCurrentState(seat_number, user) {
     const pack = await this.getCurrentPack(user);
     const pack_cards_json = await pack.getCardsJson();
     const opponent_last_picks = await this.getOpponentLastPicks(user);
@@ -155,7 +155,7 @@ class GridDraft extends Model {
     }
   }
 
-  async pickCards(body, user, refreshClient) {
+  async pickCards(body, seat_number, user, refreshClient) {
     const row = body.row;
     const col = body.col;
 

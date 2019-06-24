@@ -56,15 +56,15 @@ class GlimpseDraft extends Model {
     }
   }
 
-  async getCurrentPack(user, trx) {
+  async getCurrentPack(user_seat_number, user, trx) {
     try {
       // Get user's seat number
       const draft_lobby = await this.$relatedQuery('draft_lobby');
-      const user_with_seat_number = await draft_lobby
-        .$relatedQuery('players', trx)
-        .where({user_id: user.id})
-        .first();
-      const user_seat_number = user_with_seat_number.seat_number
+      const is_player_in_seat = await draft_lobby.isPlayerInSeat(
+        user, user_seat_number, trx);
+      if (!is_player_in_seat) {
+        throw Error("Trying to view pack for another player");
+      }
 
       // Get highest pack_number packs with that seat number
       const pack_number = await this.getPackNumber(trx);
@@ -89,8 +89,8 @@ class GlimpseDraft extends Model {
     }
   }
 
-  async getCurrentState(user) {
-    const pack = await this.getCurrentPack(user);
+  async getCurrentState(seat_number, user) {
+    const pack = await this.getCurrentPack(seat_number, user);
     const pack_cards_json = await pack.getCardsJson();
 
     return {
@@ -149,7 +149,7 @@ class GlimpseDraft extends Model {
     }
   }
 
-  async pickCards(body, user, refreshClient) {
+  async pickCards(body, seat_number, user, refreshClient) {
     const selected_card_number = body.selected_card_number;
     const burned_card_numbers = body.burned_card_numbers;
 
@@ -158,7 +158,7 @@ class GlimpseDraft extends Model {
     const knex = GlimpseDraft.knex();
 
     await transaction(knex, async (trx) => {
-      const pack = await this.getCurrentPack(user, trx);
+      const pack = await this.getCurrentPack(seat_number, user, trx);
 
       if (pack === null) {
         throw Error("No pack to pick from");

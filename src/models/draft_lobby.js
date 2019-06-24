@@ -106,6 +106,14 @@ class DraftLobby extends Model {
     return await this.getDraftType().createDraft(this);
   }
 
+  async isPlayerInSeat(user, seat_number, trx) {
+    const player_in_seat_count = await this
+      .$relatedQuery('players', trx)
+      .where({user_id: user.id, seat_number: seat_number})
+      .resultSize();
+    return player_in_seat_count > 0;
+  }
+
   async takeCards(count, trx) {
     const shuffled_cards = await this
       .$relatedQuery('shuffled_cards', trx)

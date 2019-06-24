@@ -109,11 +109,12 @@ async function getDecklistCardJson(draft_lobby, seat_number, user) {
   if (! decklist) {
     throw Error("Can't find decklist");
   }
-  const decklist_user = await decklist
-    .$relatedQuery('user');
-  if (decklist_user.id !== user.id) {
+
+  const is_player_in_seat = await draft_lobby.isPlayerInSeat(user, seat_number);
+  if (!is_player_in_seat) {
     throw Error("Trying to view decklist for another player");
   }
+
   const cards = await decklist
     .$relatedQuery('cards');
   return cards.map((card) => (
@@ -169,12 +170,13 @@ function initDraft(app, refreshClient) {
         });
   });
 
-  app.get('/api/current_draft/state',
+  app.get('/api/current_draft/seat/:seat/state',
     passport.requireLoggedIn(),
     (req, res) => {
+      seat_int = parseInt(req.params.seat);
       getCurrentDraftLobby()
         .then(lobby => lobby.getDraft())
-        .then(draft => draft.getCurrentState(req.user))
+        .then(draft => draft.getCurrentState(seat_int, req.user))
         .then(json => res.send(json))
         .catch(e => {
           console.log("GET /api/current_pack error: ", e);
@@ -195,15 +197,16 @@ function initDraft(app, refreshClient) {
         });
   });
 
-  app.post('/api/pick_cards',
+  app.post('/api/current_draft/seat/:seat/pick_cards',
     passport.requireLoggedIn(),
     (req, res) => {
+      seat_int = parseInt(req.params.seat);
       var body = req.body;
 
       if (body) {
         getCurrentDraftLobby()
           .then(lobby => lobby.getDraft())
-          .then(draft => draft.pickCards(body, req.user, refreshClient))
+          .then(draft => draft.pickCards(body, seat_int, req.user, refreshClient))
           .then(result => res.send({}))
           .catch(e => {
             console.log("POST /api/pick_cards error: ", e);

@@ -64,7 +64,8 @@ class GlimpseDraftPack extends Model {
     return cards.map((card) => (
       {
         name: card.name,
-        url: card.image_url
+        url: card.image_url,
+        card_number: card.card_number
       }));
   }
 }

@@ -1,5 +1,6 @@
 import React, { Component } from "react";
 import "./GlimpseDraft.css";
+import "mana-font/css/mana.min.css";
 
 
 class Card extends Component {

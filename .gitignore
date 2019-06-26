@@ -9,6 +9,7 @@ public/images
 cubelist.txt
 cubelists/*
 dev.db*
+AllSets.sqlite
 
 # testing
 coverage/

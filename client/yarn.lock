@@ -4302,6 +4302,11 @@ makeerror@1.0.x:
   dependencies:
     tmpl "1.0.x"
 
+mana-font@^1.4.1:
+  version "1.4.1"
+  resolved "https://registry.yarnpkg.com/mana-font/-/mana-font-1.4.1.tgz#39bfe8368bcddb3f7874e05f6580c13265589f02"
+  integrity sha512-1Taj0AOaszqA3VoEKaPH73NIH5kT7sZBJMt455UGAquan80UVh2Nu3ZNkSDqpj+ZgR6pIKtyhlyT6ntVGzKQlw==
+
 map-cache@^0.2.2:
   version "0.2.2"
   resolved "https://registry.yarnpkg.com/map-cache/-/map-cache-0.2.2.tgz#c32abd0bd6525d9b051645bb4f26ac5dc98a0dbf"

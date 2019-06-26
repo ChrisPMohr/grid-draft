@@ -6,7 +6,7 @@ class Card extends Component {
   render() {
     return (
       <img
-        className={"card-image " + (this.props.data.selected ? "selected" : "")}
+        className={"grid-card-image " + (this.props.data.selected ? "selected" : "")}
         src={this.props.data.url}
         alt={this.props.data.name}
         title={this.props.data.name}
@@ -76,7 +76,7 @@ class ColumnButton extends Component {
 class CardRow extends Component {
   render() {
     return (
-      <div className="card-row">
+      <div className="grid-card-row">
         <RowButton
           row_number={this.props.row_number}
           seat={this.props.seat}

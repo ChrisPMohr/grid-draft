@@ -1,17 +1,23 @@
 import React, { Component } from "react";
-import "./GridDraft.css";
+import "./GlimpseDraft.css";
 
 
 class Card extends Component {
+  statusClass() {
+    return (this.props.data.selected ? "selected" : "") + " " + (this.props.data.burned ? "burned" : "")
+  }
+
   render() {
     return (
-      <img
-        className={"card-image " + (this.props.data.selected ? "selected" : "")}
-        src={this.props.data.url}
-        alt={this.props.data.name}
-        title={this.props.data.name}
-        onClick={e => this.props.onClickCard(this.props.data.card_number)}
-      />
+      <div className={"glimpse-card-container " + this.statusClass()}>
+        <img
+          className={"glimpse-card-image " + this.statusClass()}
+          src={this.props.data.url}
+          alt={this.props.data.name}
+          title={this.props.data.name}
+          onClick={e => this.props.onClickCard(this.props.data.card_number)}
+        />
+       </div>
     )
   }
 }
@@ -19,7 +25,7 @@ class Card extends Component {
 class CardRow extends Component {
   render() {
     return (
-      <div className="card-row">
+      <div className="glimpse-card-row">
         {this.props.data.map((card_data) =>
           <Card key={card_data.name} data={card_data} onClickCard={this.props.onClickCard}/>)}
       </div>
@@ -133,7 +139,11 @@ export default class GlimpseDraft extends Component {
     const updatedPicks = this.state.picks.concat(card_number);
 
     const updatedCards = [...this.state.cards];
-    updatedCards[pickedCardIndex].selected = true;
+    if (updatedPicks.length == 1) {
+      updatedCards[pickedCardIndex].selected = true;
+    } else {
+      updatedCards[pickedCardIndex].burned = true;
+    }
 
     this.setState({
       picks: updatedPicks,

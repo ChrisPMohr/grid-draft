@@ -100,8 +100,18 @@ async function cleanupCube() {
   await Card.query().delete();
 }
 
+async function getCardManaCost(cardName) {
+  if (cardName.indexOf("//") != -1) {
+    const splitNames = cardName.split(" // ");
+    const manaCost1 = await getManaCost(splitNames[0]);
+    const manaCost2 = await getManaCost(splitNames[1]);
+    return manaCost1 + " // " + manaCost2;
+  } else {
+    return await getManaCost(cardName);
+  }
+}
+
 async function getManaCost(cardName) {
-  console.log(cardName);
   const response = await cardsData
     .from("cards")
     .select("manaCost")
@@ -122,8 +132,7 @@ async function createCube() {
   var cubelist = fs.readFileSync(cubelist_path).toString().trim().split('\n');
 
   for (var cardName of cubelist) {
-    const manaCost = await getManaCost(cardName)
-    console.log(manaCost);
+    const manaCost = await getCardManaCost(cardName)
     const draft = await Card
       .query()
       .insert({name: cardName, mana_cost: manaCost});

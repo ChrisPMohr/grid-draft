@@ -13,7 +13,6 @@ var RedisStore = require('connect-redis')(session)
 var WebSocket = require('ws');
 
 var User = require('./models/user');
-var Card = require('./models/card');
 var DraftLobby = require('./models/draft_lobby');
 var Decklist = require('./models/decklist');
 var DecklistCard = require('./models/decklist_card');
@@ -94,58 +93,9 @@ async function cleanupDb() {
   await DraftPlayerSeat.query().delete();
 }
 
-
-// not currently used
-async function cleanupCube() {
-  await Card.query().delete();
-}
-
-async function getCardManaCost(cardName) {
-  if (cardName.indexOf("//") != -1) {
-    const splitNames = cardName.split(" // ");
-    const manaCost1 = await getManaCost(splitNames[0]);
-    const manaCost2 = await getManaCost(splitNames[1]);
-    return manaCost1 + " // " + manaCost2;
-  } else {
-    return await getManaCost(cardName);
-  }
-}
-
-async function getManaCost(cardName) {
-  const response = await cardsData
-    .from("cards")
-    .select("manaCost")
-    .where("name", cardName)
-    .whereNotNull("multiverseId")
-    .orderBy("multiverseId", "asc")
-    .first();
-  if (response !== undefined) {
-    return response.manaCost;
-  } else {
-    return null;
-  }
-}
-
-// not currently used
-async function createCube() {
-  cubelist_path = "cubelist.txt"
-  var cubelist = fs.readFileSync(cubelist_path).toString().trim().split('\n');
-
-  for (var cardName of cubelist) {
-    const manaCost = await getCardManaCost(cardName)
-    const draft = await Card
-      .query()
-      .insert({name: cardName, mana_cost: manaCost});
-  }
-
-  return cubelist;
-}
-
 async function setUp() {
   try {
     await cleanupDb();
-    await cleanupCube();
-    await createCube();
     await require('./draft').setUp()
   } catch (e) {
     console.log("Error while setting up the server", e);

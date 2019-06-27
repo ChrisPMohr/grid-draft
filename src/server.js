@@ -27,6 +27,7 @@ var GlimpseDraftPack = require('./models/glimpse_draft_pack');
 var GlimpseDraftPackCard = require('./models/glimpse_draft_pack_card');
 
 const knex = Knex(knexConfig.development);
+const cardsData = Knex(knexConfig.cardsData);
 
 Model.knex(knex);
 
@@ -99,15 +100,33 @@ async function cleanupCube() {
   await Card.query().delete();
 }
 
+async function getManaCost(cardName) {
+  console.log(cardName);
+  const response = await cardsData
+    .from("cards")
+    .select("manaCost")
+    .where("name", cardName)
+    .whereNotNull("multiverseId")
+    .orderBy("multiverseId", "asc")
+    .first();
+  if (response !== undefined) {
+    return response.manaCost;
+  } else {
+    return null;
+  }
+}
+
 // not currently used
 async function createCube() {
   cubelist_path = "cubelist.txt"
   var cubelist = fs.readFileSync(cubelist_path).toString().trim().split('\n');
 
-  for (var cardname of cubelist) {
+  for (var cardName of cubelist) {
+    const manaCost = await getManaCost(cardName)
+    console.log(manaCost);
     const draft = await Card
       .query()
-      .insert({name: cardname});
+      .insert({name: cardName, mana_cost: manaCost});
   }
 
   return cubelist;

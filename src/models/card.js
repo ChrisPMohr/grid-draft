@@ -14,7 +14,8 @@ class Card extends Model {
 
       properties: {
         id: { type: 'integer' },
-        name: { type: 'string' }
+        name: { type: 'string' },
+        mana_cost: { type: ['string', 'null'] }
       }
     };
   }

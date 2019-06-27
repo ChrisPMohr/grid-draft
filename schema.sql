@@ -1,6 +1,7 @@
 CREATE TABLE cards (
   id INTEGER PRIMARY KEY,
-  name TEXT
+  name TEXT,
+  mana_cost TEXT
 );
 
 CREATE TABLE draft_lobbies (

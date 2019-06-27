@@ -120,7 +120,8 @@ async function getDecklistCardJson(draft_lobby, seat_number, user) {
   return cards.map((card) => (
     {
       name: card.name,
-      url: card.image_url
+      url: card.image_url,
+      mana_cost: card.mana_cost
     })
   );
 }

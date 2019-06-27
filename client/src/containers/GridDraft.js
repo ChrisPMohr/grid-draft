@@ -1,5 +1,6 @@
 import React, { Component } from "react";
 import "./GridDraft.css";
+import Decklist from "./Decklist";
 
 
 class Card extends Component {
@@ -112,41 +113,12 @@ class ColumnButtons extends Component {
   }
 }
 
-class Decklist extends Component {
-  render() {
-    var cards = [];
-    for (var i=0; this.props.decklist && i < this.props.decklist.length; i++) {
-      cards.push(
-        (<CardListItem
-           key={i}
-           card={this.props.decklist[i]} />)
-      );
-    }
-
-
-    return (
-      <div className="Decklist">
-        <h1>Decklist</h1>
-        {cards}
-      </div>
-    );
-  }
-}
-
-class CardListItem extends Component {
-  render() {
-    return (
-      <div>{this.props.card.name}</div>
-    );
-  }
-}
-
 class OpponentLastPicks extends Component {
   render() {
     var cards = [];
     for (var i=0; this.props.picks && i < this.props.picks.length; i++) {
       cards.push(
-        (<CardListItem
+        (<OpponentLastPicksItem
            key={this.props.picks[i].name}
            card={this.props.picks[i]} />)
       );
@@ -158,6 +130,14 @@ class OpponentLastPicks extends Component {
         <h2>Opponent&apos;s Last Picks</h2>
         {cards}
       </div>
+    );
+  }
+}
+
+class OpponentLastPicksItem extends Component {
+  render() {
+    return (
+      <div>{this.props.card.name}</div>
     );
   }
 }

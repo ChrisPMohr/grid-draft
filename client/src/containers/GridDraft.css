@@ -2,12 +2,6 @@
   position: relative;
 }
 
-.Decklist {
-  position: absolute;
-  top: 0;
-  left: 0;
-}
-
 .OpponentLastPicks {
   float: right;
 }

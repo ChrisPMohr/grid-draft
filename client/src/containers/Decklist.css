@@ -1,0 +1,9 @@
+.Decklist {
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+.DecklistItem {
+  line-height: 1.45em;
+}

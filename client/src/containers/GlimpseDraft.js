@@ -1,6 +1,6 @@
 import React, { Component } from "react";
 import "./GlimpseDraft.css";
-import "mana-font/css/mana.min.css";
+import Decklist from "./Decklist";
 
 
 class Card extends Component {
@@ -31,34 +31,6 @@ class CardRow extends Component {
           <Card key={card_data.name} data={card_data} onClickCard={this.props.onClickCard}/>)}
       </div>
     )
-  }
-}
-
-class Decklist extends Component {
-  render() {
-    var cards = [];
-    for (var i=0; this.props.decklist && i < this.props.decklist.length; i++) {
-      cards.push(
-        (<CardListItem
-           key={i}
-           card={this.props.decklist[i]} />)
-      );
-    }
-
-    return (
-      <div className="Decklist">
-        <h1>Decklist</h1>
-        {cards}
-      </div>
-    );
-  }
-}
-
-class CardListItem extends Component {
-  render() {
-    return (
-      <div>{this.props.card.name}</div>
-    );
   }
 }
 

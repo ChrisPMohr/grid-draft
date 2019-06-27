@@ -2,12 +2,6 @@
   position: relative;
 }
 
-.Decklist {
-  position: absolute;
-  top: 0;
-  left: 0;
-}
-
 .glimpse-card-row {
   width: 760px;
   margin: 0 auto;

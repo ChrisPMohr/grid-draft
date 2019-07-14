@@ -2,6 +2,9 @@ import React, { Component } from "react";
 import "./GlimpseDraft.css";
 import Decklist from "./Decklist";
 
+function xor(a,b) {
+  return ( a || b ) && !( a && b );
+}
 
 class Card extends Component {
   statusClass() {
@@ -72,11 +75,17 @@ export default class GlimpseDraft extends Component {
       throw Error(body.message);
     }
 
-    this.setState({
-      pack_number: body.pack_number,
-      cards: body.cards,
-      picks: []
-    })
+    if (xor(this.state.cards == null,
+            body.cards == null)
+        || (this.state.cards != null &&
+            body.cards != null &&
+            this.state.cards.length != body.cards.length)) {
+      this.setState({
+        pack_number: body.pack_number,
+        cards: body.cards,
+        picks: []
+      })
+    }
   };
 
   updateDecklist = async () => {

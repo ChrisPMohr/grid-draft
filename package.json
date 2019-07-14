@@ -13,10 +13,10 @@
   "dependencies": {
     "bcrypt": "2.0.1",
     "body-parser": "1.15.1",
-    "connect-redis": "3.0.2",
+    "connect-redis": "3.4.1",
     "express": "^4.16.2",
     "express-session": "1.16.2",
-    "knex": "^0.14.6",
+    "knex": "^0.19.0",
     "objection": "^1.1.7",
     "passport": "0.3.2",
     "passport-local": "1.0.0",

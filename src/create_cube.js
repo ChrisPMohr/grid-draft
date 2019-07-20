@@ -1,4 +1,5 @@
 var fs = require("fs");
+var https = require("https");
 
 var Knex = require('knex');
 var knexConfig = require('./knexfile');
@@ -12,48 +13,106 @@ const cardsData = Knex(knexConfig.cardsData);
 
 Model.knex(knex);
 
+SCRYFALL_API_DELAY = 100;
+
+BANNED_SET_TYPE = ["from_the_vault", "masterpiece", "spellbook", "premium_deck"];
+
 async function cleanupCube() {
   await Card.query().delete();
 }
 
-async function getCardManaCost(cardName) {
+async function getCardData(cardName) {
   if (cardName.indexOf("//") != -1) {
     const splitNames = cardName.split(" // ");
-    const manaCost1 = await getManaCost(splitNames[0]);
-    const manaCost2 = await getManaCost(splitNames[1]);
-    return manaCost1 + " // " + manaCost2;
+    const cardData1 = await getCardFaceData(splitNames[0]);
+    const cardData2 = await getCardFaceData(splitNames[1]);
+    return {
+      manaCost: cardData1.manaCost + " // " + cardData2.manaCost,
+      scryfallId: cardData1.scryfallId
+    };
   } else {
-    return await getManaCost(cardName);
+    return await getCardFaceData(cardName);
   }
 }
 
-async function getManaCost(cardName) {
-  const response = await cardsData
+function getCardFaceDataQuery(cardName) {
+  return cardsData
     .from("cards")
-    .select("manaCost")
-    .where("name", cardName)
+    .join("sets", "cards.setCode", "sets.code")
+    .select("manaCost", "scryfallId")
+    .where("cards.name", cardName)
     .whereNotNull("multiverseId")
-    .orderBy("multiverseId", "asc")
-    .first();
-  if (response !== undefined) {
-    return response.manaCost;
+    .whereNotIn("sets.type", BANNED_SET_TYPE)
+    .orderBy("multiverseId", "asc");
+  }
+
+async function getCardFaceData(cardName) {
+  const newFrameCardData = await getNewFrameCardFaceData(cardName);
+  if (newFrameCardData) {
+    return newFrameCardData;
   } else {
-    return null;
+    return await getAnyFrameCardFaceData(cardName);
+  }
+} 
+
+async function getNewFrameCardFaceData(cardName) {
+  return await getCardFaceDataQuery(cardName)
+    .where("frameVersion", ">=", 2003)
+    .where("borderColor", "black")
+    .first();
+}
+
+async function getAnyFrameCardFaceData(cardName) {
+  return await getCardFaceDataQuery(cardName).first();
+}
+
+function getImageUrl(scryfallId) {
+  const imagePrefix = "https://img.scryfall.com/cards/normal/front/";
+  const imageSuffix = ".jpg";
+  const firstIdChar = scryfallId[0];
+  const secondIdChar = scryfallId[1];
+  const url = imagePrefix + firstIdChar + "/" + secondIdChar + "/" + scryfallId + imageSuffix;
+  return url;
+}
+
+function sleep(ms){
+  return new Promise(resolve=>{
+    setTimeout(resolve,ms)
+  })
+}
+
+async function downloadImage(cardName, imageUrl) {
+  const downloadedFileDir = "/home/chris.pintz.mohr/downloaded_images/";
+  const downloadedFileName = cardName.replace(" // ", "");
+  const downloadedFilePath = downloadedFileDir + downloadedFileName;
+  if (!fs.existsSync(downloadedFilePath)) {
+    console.log(imageUrl);
+    await sleep(SCRYFALL_API_DELAY);
+    const file = fs.createWriteStream(downloadedFilePath);
+    await https.get(imageUrl, function(response) {
+      response.pipe(file);
+    });
+    console.log("Downloaded image for", cardName);
   }
 }
 
-// not currently used
 async function createCube() {
   cubelist_path = "cubelist.txt"
   var cubelist = fs.readFileSync(cubelist_path).toString().trim().split('\n');
 
   for (var cardName of cubelist) {
-    const manaCost = await getCardManaCost(cardName)
+    console.log(cardName);
+    const cardData = await getCardData(cardName);
+    const manaCost = cardData.manaCost;
+    const imageUrl = getImageUrl(cardData.scryfallId);
+    await downloadImage(cardName, imageUrl);
+
     const draft = await Card
       .query()
       .insert({name: cardName, mana_cost: manaCost});
   }
 
+  await sleep(500);
   return cubelist;
 }
 

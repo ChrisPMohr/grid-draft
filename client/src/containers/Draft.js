@@ -10,6 +10,20 @@ export default class Draft extends Component {
 
   async componentDidMount() {
     await this.getCurrentDraft();
+
+    const ws = new WebSocket('ws://34.73.130.219:8080');
+    console.log("Created websocket connection");
+    ws.onopen = (event) => {
+      ws.send(this.props.match.params.seat);
+      console.log("Sent websocket message");
+    }
+    ws.addEventListener('message', (event) => {
+      console.log("Got refresh message in lobby");
+      if (!(this.state.draft && this.state.draft.started)) {
+        this.getCurrentDraft();
+      }
+    });
+    this.setState({ws: ws});
   }
 
   getCurrentDraft = async () => {
@@ -41,8 +55,8 @@ export default class Draft extends Component {
     if (this.state.draft.started) {
       return (
         {
-          'grid': <GridDraft seat={this.props.match.params.seat}/>,
-          'glimpse': <GlimpseDraft seat={this.props.match.params.seat}/>
+          'grid': <GridDraft seat={this.props.match.params.seat} ws={this.state.ws}/>,
+          'glimpse': <GlimpseDraft seat={this.props.match.params.seat} ws={this.state.ws}/>
         }[this.state.draft.type]
       );
     } else {

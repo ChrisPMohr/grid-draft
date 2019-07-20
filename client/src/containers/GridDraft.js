@@ -154,16 +154,10 @@ export default class GridDraft extends Component {
 
   async componentDidMount() {
     await this.updateDraft();
-    this.connection = new WebSocket('ws://34.73.130.219:8080');
-    console.log("Created websocket connection");
-    this.connection.onopen = (event) => {
-      this.connection.send(this.props.seat);
-      console.log("Sent websocket message");
-    }
-    this.connection.onmessage = (event) => {
-      console.log("Got refresh message");
+    this.props.ws.addEventListener('message', (event) => {
+      console.log("Got refresh message in draft");
       this.getDraftState();
-    }
+    });
   }
 
   updateDraft = async () => {

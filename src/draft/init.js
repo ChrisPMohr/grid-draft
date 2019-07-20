@@ -17,12 +17,12 @@ async function setUpDraft() {
   }
 }
 
-async function createAndJoinDraftLobby(user, draft_type) {
+async function createAndJoinDraftLobby(user, draft_type, refreshClient) {
   const draft_lobby = await createDraftLobby(draft_type);
-  return await joinDraftLobby(draft_lobby, user);
+  return await joinDraftLobby(draft_lobby, user, refreshClient);
 }
 
-async function joinDraftLobby(draft_lobby, user) {
+async function joinDraftLobby(draft_lobby, user, refreshClient) {
   const playerCount = await draft_lobby.getPlayerCount();
   const seatNumber = playerCount;
 
@@ -32,7 +32,7 @@ async function joinDraftLobby(draft_lobby, user) {
       .relate({id: user.id, seat_number: seatNumber});
     if (playerCount == 1) {
       console.log("Starting draft");
-      const updated_draft_lobby = await startDraftLobby(draft_lobby);
+      const updated_draft_lobby = await startDraftLobby(draft_lobby, refreshClient);
 
       return [updated_draft_lobby, seatNumber];
     } else {
@@ -56,7 +56,7 @@ async function createDraftLobby(draft_type) {
   }
 }
 
-async function startDraftLobby(draft_lobby) {
+async function startDraftLobby(draft_lobby, refreshClient) {
   await createDecklist(draft_lobby, 0);
   await createDecklist(draft_lobby, 1);
   await createShuffledCube(draft_lobby);
@@ -64,8 +64,12 @@ async function startDraftLobby(draft_lobby) {
     .$query()
     .patchAndFetch({started: true});
 
-  const grid_draft = await draft_lobby.getDraft()
-  const updated_grid_draft = await grid_draft.startDraft();
+  const draft = await draft_lobby.getDraft()
+  await draft.startDraft();
+
+  for (seat_number = 0; seat_number < 2; seat_number++) {
+    refreshClient(seat_number);
+  }
 
   return updated_draft_lobby
 }
@@ -141,7 +145,7 @@ function initDraft(app, refreshClient) {
   app.post('/api/draft',
     passport.requireLoggedIn(),
     (req, res) => {
-      createAndJoinDraftLobby(req.user, 'grid')
+      createAndJoinDraftLobby(req.user, 'grid', refreshClient)
         .then(lobby_and_seat_number => {
           res.send({
             'draft': lobby_and_seat_number[0].computedMapping(),
@@ -158,7 +162,7 @@ function initDraft(app, refreshClient) {
     passport.requireLoggedIn(),
     (req, res) => {
       getCurrentDraftLobby()
-        .then(lobby => joinDraftLobby(lobby, req.user))
+        .then(lobby => joinDraftLobby(lobby, req.user, refreshClient))
         .then(lobby_and_seat_number => {
           res.send({
             'draft': lobby_and_seat_number[0].computedMapping(),

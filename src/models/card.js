@@ -15,13 +15,10 @@ class Card extends Model {
       properties: {
         id: { type: 'integer' },
         name: { type: 'string' },
-        mana_cost: { type: ['string', 'null'] }
+        mana_cost: { type: ['string', 'null'] },
+        image_url: { type: 'string' },
       }
     };
-  }
-
-  get image_url() {
-    return "/images/" + this.name.replace(" // ", "");
   }
 }
 

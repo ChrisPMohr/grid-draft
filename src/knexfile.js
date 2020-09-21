@@ -9,7 +9,7 @@ module.exports = {
   cardsData: {
     client: 'sqlite3',
     connection: {
-      filename: "./AllSets.sqlite"
+      filename: "./AllPrintings.sqlite"
     },
     useNullAsDefault: true
   }

@@ -40,7 +40,8 @@ function getCardFaceDataQuery(cardName) {
     .from("cards")
     .join("sets", "cards.setCode", "sets.code")
     .select("manaCost", "scryfallId")
-    .where("cards.name", cardName)
+    .where(function() {
+      this.where("cards.name", cardName).orWhere("cards.faceName", cardName)})
     .whereNotNull("multiverseId")
     .whereNotIn("sets.type", BANNED_SET_TYPE)
     .orderBy("multiverseId", "asc");
@@ -81,21 +82,6 @@ function sleep(ms){
   })
 }
 
-async function downloadImage(cardName, imageUrl) {
-  const downloadedFileDir = "/home/chris.pintz.mohr/downloaded_images/";
-  const downloadedFileName = cardName.replace(" // ", "");
-  const downloadedFilePath = downloadedFileDir + downloadedFileName;
-  if (!fs.existsSync(downloadedFilePath)) {
-    console.log(imageUrl);
-    await sleep(SCRYFALL_API_DELAY);
-    const file = fs.createWriteStream(downloadedFilePath);
-    await https.get(imageUrl, function(response) {
-      response.pipe(file);
-    });
-    console.log("Downloaded image for", cardName);
-  }
-}
-
 async function createCube() {
   cubelist_path = "cubelist.txt"
   var cubelist = fs.readFileSync(cubelist_path).toString().trim().split('\n');
@@ -105,11 +91,10 @@ async function createCube() {
     const cardData = await getCardData(cardName);
     const manaCost = cardData.manaCost;
     const imageUrl = getImageUrl(cardData.scryfallId);
-    await downloadImage(cardName, imageUrl);
 
     const draft = await Card
       .query()
-      .insert({name: cardName, mana_cost: manaCost});
+      .insert({name: cardName, mana_cost: manaCost, image_url: imageUrl});
   }
 
   await sleep(500);

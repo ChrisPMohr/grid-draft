@@ -1,0 +1,65 @@
+# Install nodejs
+# https://nodejs.org/en/download/package-manager/#debian-and-ubuntu-based-linux-distributions
+curl -sL https://deb.nodesource.com/setup_10.x | sudo -E bash -
+sudo apt-get install -y nodejs
+
+
+# Install yarn
+# https://yarnpkg.com/lang/en/docs/install/#debian-stable
+curl -sS https://dl.yarnpkg.com/debian/pubkey.gpg | sudo apt-key add -
+echo "deb https://dl.yarnpkg.com/debian/ stable main" | sudo tee /etc/apt/sources.list.d/yarn.list
+sudo apt-get update && sudo apt-get install yarn
+
+
+# Install redis
+# https://www.digitalocean.com/community/tutorials/how-to-install-and-configure-redis-on-ubuntu-16-04
+sudo apt-get install build-essential tcl
+cd /tmp
+curl -O http://download.redis.io/redis-stable.tar.gz
+tar xzvf redis-stable.tar.gz
+cd redis-stable
+make
+sudo make install
+sudo mkdir /etc/redis
+sudo cp /tmp/redis-stable/redis.conf /etc/redis
+sudo vim /etc/redis/redis.conf
+sudo vim /etc/systemd/system/redis.service
+sudo adduser --system --group --no-create-home redis
+sudo mkdir /var/lib/redis
+sudo chown redis:redis /var/lib/redis
+sudo chmod 770 /var/lib/redis
+
+
+# Install sqlite
+# https://www.digitalocean.com/community/tutorials/how-and-when-to-use-sqlite
+sudo apt-get install sqlite3 libsqlite3-dev
+
+
+# Install nginx
+# http://blog.danyll.com/setting-up-express-with-nginx-and-pm2/
+sudo add-apt-repository ppa:nginx/stable
+apt-get update
+apt-get install nginx
+cp grid-draft/deploy/nginx_site /etc/nginx/sites-available/griddraft.tk
+ln -s /etc/nginx/sites-available/griddraft.tk /etc/nginx/sites-enabled/griddraft.tk
+
+
+# Install dependencies
+cd grid-draft
+yarn install
+cd client
+yarn install
+
+
+# Create SQLite database
+sqlite dev.db < schema.sql
+
+
+# Download mtgjson sqlite
+grid-draft/deploy/download_mtg_json.sh
+
+
+# Restart Server
+sudo service nginx start
+sudo service redis start
+REDIS_STORE_URI=redis://localhost REDIS_STORE_SECRET=<redis_store_secret> pm2 start src/server.js
